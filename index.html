@@ -18,7 +18,10 @@
     <span class="holo">HOLO</span><span class="flix">FLIX</span>
   </div>
 
-  <input id="search" placeholder="Search movies..." />
+  <div style="position:relative;">
+    <input id="search" placeholder="Search movies..." />
+    <div id="suggestions"></div>
+  </div>
 
   <select id="genreFilter">
     <option value="">Genres</option>
@@ -87,6 +90,7 @@ let currentMovie = null;
 let page = 1;
 let currentGenre = "";
 let currentSort = "popular";
+let searchTimer = null;
 
 // ---------------- VIEW ----------------
 function show(v){
@@ -94,7 +98,7 @@ function show(v){
   $(`#${v}-view`).addClass("active");
 }
 
-// ---------------- API (FIXED) ----------------
+// ---------------- API ----------------
 function api(url){
   return $.ajax({
     url: BASE + url,
@@ -151,8 +155,6 @@ function loadMovies(){
 
     $("#movies-grid").html(render(results));
     $("#page").text(page);
-  }).catch(()=>{
-    $("#movies-grid").html("Failed to load movies.");
   });
 }
 
@@ -224,18 +226,17 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------------- SEARCH ----------------
-$("#search").on("keyup",function(){
-  let q = $(this).val();
+// ---------------- PAGINATION ----------------
+$("#next").on("click",function(){
+  page++;
+  loadMovies();
+});
 
-  if(q.length < 2){
+$("#prev").on("click",function(){
+  if(page > 1){
+    page--;
     loadMovies();
-    return;
   }
-
-  api(`/search/movie?query=${q}`).then(d=>{
-    $("#movies-grid").html(render(d.results));
-  });
 });
 
 // ---------------- FILTERS ----------------
@@ -250,16 +251,56 @@ $("#genreFilter").on("change",function(){
   loadMovies();
 });
 
-// ---------------- PAGINATION ----------------
-$("#next").on("click",function(){
-  page++;
-  loadMovies();
+// ---------------- SEARCH + LIVE SUGGESTIONS ----------------
+$("#search").on("input",function(){
+  let q = $(this).val().trim();
+
+  clearTimeout(searchTimer);
+
+  if(q.length < 2){
+    $("#suggestions").empty();
+    loadMovies();
+    return;
+  }
+
+  searchTimer = setTimeout(()=>{
+    api(`/search/movie?query=${q}`).then(d=>{
+      let results = (d.results || []).slice(0,6);
+
+      $("#suggestions").html(
+        results.map(m=>{
+          const img = m.poster_path
+            ? IMG + m.poster_path
+            : "https://via.placeholder.com/50x75";
+
+          return `
+            <div class="suggestion-item" data-id="${m.id}">
+              <img src="${img}" style="width:30px;margin-right:8px;border-radius:4px;">
+              ${m.title}
+            </div>
+          `;
+        }).join("")
+      );
+    });
+  },300);
 });
 
-$("#prev").on("click",function(){
-  if(page > 1){
-    page--;
-    loadMovies();
+// ---------------- CLICK SUGGESTION ----------------
+$(document).on("click",".suggestion-item",function(){
+  let id = $(this).data("id");
+
+  $("#suggestions").empty();
+  $("#search").val("");
+
+  api(`/movie/${id}`).then(m=>{
+    loadDetail(m);
+  });
+});
+
+// ---------------- CLOSE SUGGESTIONS ----------------
+$(document).on("click",function(e){
+  if(!$(e.target).closest("#search,#suggestions").length){
+    $("#suggestions").empty();
   }
 });
 
