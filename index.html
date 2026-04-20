@@ -7,7 +7,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-
 <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -18,7 +17,7 @@
     <span class="holo">HOLO</span><span class="flix">FLIX</span>
   </div>
 
-  <div style="display:flex; gap:5px; position:relative;">
+  <div style="position:relative; display:flex; gap:5px;">
     <input id="search" placeholder="Search movies..." />
     <button id="searchBtn">Search</button>
     <div id="suggestions"></div>
@@ -123,10 +122,8 @@ function render(list){
   }).join("");
 }
 
-// ---------------- MASTER DATA LOADER ----------------
-function loadMovies(){
-  $("#movies-grid").html("Loading...");
-
+// ---------------- MASTER DATA ENGINE ----------------
+function fetchData(callback){
   let url;
 
   if(searchQuery.length > 0){
@@ -144,27 +141,40 @@ function loadMovies(){
       );
     }
 
-    $("#movies-grid").html(render(results));
-    $("#page").text(page);
+    callback(results);
   });
 }
 
 // ---------------- HOME ----------------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
-    $("#home-grid").html(render(d.results));
+    fetchData(filtered=>{
+      $("#home-grid").html(render(filtered));
+    });
   });
 }
 
-// ---------------- GENRES ----------------
-function loadGenres(){
-  api("/genre/movie/list").then(d=>{
-    d.genres.forEach(g=>{
-      $("#genreFilter").append(
-        `<option value="${g.id}">${g.name}</option>`
-      );
-    });
+// ---------------- MOVIES ----------------
+function loadMovies(){
+  $("#movies-grid").html("Loading...");
+
+  fetchData(results=>{
+    $("#movies-grid").html(render(results));
+    $("#page").text(page);
   });
+}
+
+// ---------------- FAVORITES (FILTERED) ----------------
+function loadFavs(){
+  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+
+  if(currentGenre){
+    favs = favs.filter(m =>
+      m.genre_ids && m.genre_ids.includes(Number(currentGenre))
+    );
+  }
+
+  $("#fav-grid").html(render(favs));
 }
 
 // ---------------- DETAIL ----------------
@@ -219,12 +229,6 @@ $(document).on("click","#favBtn",function(){
   alert("Added ❤️");
 });
 
-// ---------------- LOAD FAVORITES ----------------
-function loadFavs(){
-  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-  $("#fav-grid").html(render(favs));
-}
-
 // ---------------- NAV ----------------
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
@@ -235,14 +239,14 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------------- SEARCH BUTTON (FIXED MAIN FEATURE) ----------------
+// ---------------- SEARCH BUTTON (FIXED) ----------------
 $("#searchBtn").on("click", function(){
   searchQuery = $("#search").val().trim();
   page = 1;
-  loadMovies();
+  reloadAll();
 });
 
-// ---------------- LIVE SEARCH SUGGESTIONS ----------------
+// ---------------- LIVE SUGGESTIONS ----------------
 $("#search").on("input",function(){
   let q = $(this).val().trim();
 
@@ -264,7 +268,7 @@ $("#search").on("input",function(){
   });
 });
 
-// ---------------- CLICK SUGGESTION ----------------
+// ---------------- SUGGESTION CLICK ----------------
 $(document).on("click",".suggestion-item",function(){
   let id = $(this).data("id");
 
@@ -283,17 +287,17 @@ $(document).on("click",function(e){
   }
 });
 
-// ---------------- FILTERS (GLOBAL FIX) ----------------
+// ---------------- FILTERS (GLOBAL FIXED) ----------------
 $("#sortFilter").on("change",function(){
   currentSort = $(this).val();
   page = 1;
-  loadMovies();
+  reloadAll();
 });
 
 $("#genreFilter").on("change",function(){
   currentGenre = $(this).val();
   page = 1;
-  loadMovies();
+  reloadAll();
 });
 
 // ---------------- PAGINATION ----------------
@@ -309,10 +313,16 @@ $("#prev").on("click",function(){
   }
 });
 
+// ---------------- GLOBAL RELOAD ENGINE ----------------
+function reloadAll(){
+  if($("#home-view").hasClass("active")) loadHome();
+  if($("#movies-view").hasClass("active")) loadMovies();
+  if($("#favorites-view").hasClass("active")) loadFavs();
+}
+
 // ---------------- INIT ----------------
 $(function(){
   loadHome();
-  loadGenres();
 });
 
 </script>
