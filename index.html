@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HoloFlix</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HoloFlix</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-
-  <link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
@@ -20,6 +18,16 @@
   </div>
 
   <input id="search" placeholder="Search movies..." />
+
+  <select id="genreFilter">
+    <option value="">Genres</option>
+  </select>
+
+  <select id="sortFilter">
+    <option value="popular">Popular</option>
+    <option value="top_rated">Top Rated</option>
+    <option value="now_playing">Now Playing</option>
+  </select>
 
   <button data-view="home">Home</button>
   <button data-view="movies">Movies</button>
@@ -38,9 +46,15 @@
   <div id="movies-view" class="view">
     <h1>Movies</h1>
     <div id="movies-grid"></div>
+
+    <div id="pagination">
+      <button id="prev">Prev</button>
+      <span id="page">1</span>
+      <button id="next">Next</button>
+    </div>
   </div>
 
-  <!-- DETAIL (FIXED STRUCTURE) -->
+  <!-- DETAIL -->
   <div id="detail-view" class="view">
     <button id="back">← Back</button>
 
@@ -48,6 +62,8 @@
       <img id="detail-img" class="detail-img" />
       <h1 id="detail-title"></h1>
       <p id="detail-overview"></p>
+      <p id="detail-actors"></p>
+
       <button id="favBtn">❤️ Add to Favorites</button>
     </div>
   </div>
@@ -67,6 +83,9 @@ const BASE = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p/w500";
 
 let currentMovie = null;
+let page = 1;
+let currentGenre = "";
+let currentSort = "popular";
 
 // ---------- VIEW ----------
 function show(v){
@@ -77,12 +96,12 @@ function show(v){
 // ---------- API ----------
 function api(url){
   return $.get(`${BASE}${url}?api_key=${API_KEY}`)
-    .fail(err => console.log("API ERROR", err));
+    .fail(err => console.log(err));
 }
 
 // ---------- RENDER ----------
 function render(list){
-  return list.map(m => {
+  return list.map(m=>{
     const img = m.poster_path
       ? IMG + m.poster_path
       : "https://via.placeholder.com/300x450?text=No+Image";
@@ -103,15 +122,35 @@ function loadHome(){
   });
 }
 
-// ---------- MOVIES ----------
-function loadMovies(){
-  $("#movies-grid").html("Loading...");
-  api("/discover/movie").then(d=>{
-    $("#movies-grid").html(render(d.results));
+// ---------- GENRES ----------
+function loadGenres(){
+  api("/genre/movie/list").then(d=>{
+    d.genres.forEach(g=>{
+      $("#genreFilter").append(`<option value="${g.id}">${g.name}</option>`);
+    });
   });
 }
 
-// ---------- DETAIL (FIXED PROPERLY) ----------
+// ---------- MOVIES (SORT + FILTER + PAGINATION) ----------
+function loadMovies(){
+  $("#movies-grid").html("Loading...");
+
+  api(`/movie/${currentSort}&page=${page}`).then(d=>{
+
+    let results = d.results;
+
+    if(currentGenre){
+      results = results.filter(m =>
+        m.genre_ids.includes(Number(currentGenre))
+      );
+    }
+
+    $("#movies-grid").html(render(results));
+    $("#page").text(page);
+  });
+}
+
+// ---------- DETAIL (WITH ACTORS) ----------
 function loadDetail(movie){
   currentMovie = movie;
 
@@ -119,11 +158,16 @@ function loadDetail(movie){
     ? IMG + movie.poster_path
     : "https://via.placeholder.com/300x450?text=No+Image";
 
-  $("#detail-img").attr("src", img);
-  $("#detail-title").text(movie.title);
-  $("#detail-overview").text(movie.overview);
+  api(`/movie/${movie.id}/credits`).then(c=>{
+    let actors = c.cast.slice(0,5).map(a=>a.name).join(", ");
 
-  show("detail");
+    $("#detail-img").attr("src", img);
+    $("#detail-title").text(movie.title);
+    $("#detail-overview").text(movie.overview);
+    $("#detail-actors").text("Actors: " + actors);
+
+    show("detail");
+  });
 }
 
 // ---------- CLICK MOVIE ----------
@@ -135,48 +179,36 @@ $(document).on("click",".card",function(){
   });
 });
 
-// ---------- FAVORITES (FIXED + SAFE) ----------
+// ---------- FAVORITES ----------
 $(document).on("click","#favBtn",function(){
   if(!currentMovie) return;
 
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-  if(!favs.some(f => f.id === currentMovie.id)){
+  if(!favs.some(f=>f.id===currentMovie.id)){
     favs.push(currentMovie);
   }
 
   localStorage.setItem("favs", JSON.stringify(favs));
-
-  alert("Added to Favorites ❤️");
+  alert("Added ❤️");
 });
 
-// ---------- LOAD FAVORITES ----------
+// ---------- LOAD FAVS ----------
 function loadFavs(){
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-  $("#fav-grid").html(
-    favs.map(f => {
-      const img = f.poster_path
-        ? IMG + f.poster_path
-        : "https://via.placeholder.com/300x450?text=No+Image";
-
-      return `
-        <div class="card fav-card" data-id="${f.id}">
-          <img src="${img}">
-          <p>${f.title}</p>
-        </div>
-      `;
-    }).join("")
-  );
+  $("#fav-grid").html(render(favs));
 }
 
-// ---------- CLICK FAVORITE → DETAIL ----------
-$(document).on("click",".fav-card",function(){
-  let id = $(this).data("id");
+// ---------- CLICK FAV ----------
+$(document).on("click",".card",function(){
+  if($("#favorites-view").hasClass("active")){
+    let id = $(this).data("id");
 
-  api(`/movie/${id}`).then(m=>{
-    loadDetail(m);
-  });
+    api(`/movie/${id}`).then(m=>{
+      loadDetail(m);
+    });
+  }
 });
 
 // ---------- NAV ----------
@@ -184,20 +216,40 @@ $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
   show(v);
 
-  if(v === "home") loadHome();
-  if(v === "movies") loadMovies();
-  if(v === "favorites") loadFavs();
+  if(v==="home") loadHome();
+  if(v==="movies") loadMovies();
+  if(v==="favorites") loadFavs();
 });
 
-// ---------- BACK ----------
-$(document).on("click","#back",function(){
-  show("movies");
+// ---------- PAGINATION ----------
+$("#next").on("click",()=>{
+  page++;
+  loadMovies();
+});
+
+$("#prev").on("click",()=>{
+  if(page>1){
+    page--;
+    loadMovies();
+  }
+});
+
+// ---------- FILTERS ----------
+$("#genreFilter").on("change",function(){
+  currentGenre = $(this).val();
+  loadMovies();
+});
+
+$("#sortFilter").on("change",function(){
+  currentSort = $(this).val();
+  page = 1;
+  loadMovies();
 });
 
 // ---------- SEARCH ----------
 $("#search").on("keyup",function(){
   let q = $(this).val();
-  if(q.length < 2) return;
+  if(q.length<2) return;
 
   api(`/search/movie?query=${q}`).then(d=>{
     $("#movies-grid").html(render(d.results));
@@ -207,6 +259,7 @@ $("#search").on("keyup",function(){
 // ---------- INIT ----------
 $(function(){
   loadHome();
+  loadGenres();
 });
 
 </script>
