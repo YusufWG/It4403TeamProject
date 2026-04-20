@@ -5,6 +5,7 @@ body {
   color: white;
 }
 
+/* NAV */
 nav {
   display: flex;
   gap: 10px;
@@ -14,13 +15,18 @@ nav {
   flex-wrap: wrap;
 }
 
+/* BRAND COLORS */
 .logo {
   font-family: 'Bebas Neue';
-  font-size: 28px;
+  font-size: 30px;
 }
 
-.logo span {
-  color: red;
+.holo {
+  color: orange;
+}
+
+.flix {
+  color: purple;
 }
 
 input {
@@ -29,6 +35,7 @@ input {
   border: none;
 }
 
+/* VIEWS */
 .view {
   display: none;
   padding: 20px;
@@ -38,6 +45,7 @@ input {
   display: block;
 }
 
+/* GRID */
 #home-grid,
 #movies-grid,
 #fav-grid {
@@ -46,19 +54,21 @@ input {
   gap: 10px;
 }
 
+/* CARD */
 .card {
   background: #222;
-  padding: 10px;
   border-radius: 10px;
+  padding: 10px;
+  text-align: center;
   cursor: pointer;
   transition: 0.2s;
-  text-align: center;
 }
 
 .card:hover {
   transform: scale(1.05);
 }
 
+/* IMAGES */
 .card img {
   width: 100%;
   height: 240px;
