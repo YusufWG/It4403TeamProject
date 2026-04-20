@@ -7,11 +7,11 @@ body {
 
 nav {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
   padding: 12px;
   background: #111;
-  flex-wrap: wrap;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -22,16 +22,21 @@ nav {
   font-size: 30px;
 }
 
-.holo { color: orange; }
-.flix { color: purple; }
+.holo {
+  color: orange;
+}
+
+.flix {
+  color: purple;
+}
 
 input, select {
   padding: 8px;
   border-radius: 6px;
   border: none;
-  outline: none;
   background: #222;
   color: white;
+  outline: none;
 }
 
 button {
@@ -41,7 +46,6 @@ button {
   background: #333;
   color: white;
   cursor: pointer;
-  transition: 0.2s;
 }
 
 button:hover {
@@ -71,8 +75,7 @@ button:hover {
   padding: 10px;
   text-align: center;
   cursor: pointer;
-  transition: 0.25s;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  transition: 0.2s;
 }
 
 .card:hover {
@@ -94,14 +97,13 @@ button:hover {
   background: #1a1a1a;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 
 .detail-img {
   width: 100%;
   max-width: 320px;
-  border-radius: 12px;
-  margin-bottom: 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 #detail-actors {
@@ -119,13 +121,65 @@ button:hover {
   margin: 5px;
 }
 
+/* ---------------- LIVE SEARCH ---------------- */
+
+#search {
+  position: relative;
+}
+
+#suggestions {
+  position: absolute;
+  top: 55px;
+  left: 10px;
+  width: 240px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 999;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
+  font-size: 14px;
+}
+
+.suggestion-item:hover {
+  background: #333;
+}
+
+.suggestion-item img {
+  width: 30px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+
 @media (max-width: 600px) {
   nav {
     flex-direction: column;
     align-items: flex-start;
   }
 
+  #suggestions {
+    width: 90%;
+    left: 5%;
+  }
+
   .card img {
     height: 200px;
+  }
+
+  .detail-box {
+    width: 90%;
   }
 }
