@@ -5,7 +5,6 @@ body {
   color: white;
 }
 
-/* NAV */
 nav {
   display: flex;
   gap: 10px;
@@ -30,7 +29,6 @@ input {
   border: none;
 }
 
-/* VIEWS */
 .view {
   display: none;
   padding: 20px;
@@ -40,7 +38,6 @@ input {
   display: block;
 }
 
-/* GRID */
 #home-grid,
 #movies-grid,
 #fav-grid {
@@ -49,7 +46,6 @@ input {
   gap: 10px;
 }
 
-/* CARD */
 .card {
   background: #222;
   padding: 10px;
@@ -63,19 +59,9 @@ input {
   transform: scale(1.05);
 }
 
-/* MOVIE IMAGE */
 .card img {
   width: 100%;
   height: 240px;
   object-fit: cover;
   border-radius: 8px;
-  margin-bottom: 5px;
-}
-
-/* MOBILE */
-@media (max-width: 600px) {
-  nav {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
