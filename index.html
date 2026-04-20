@@ -14,46 +14,39 @@
   <!-- CSS -->
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<!-- NAV -->
 <nav>
-  <div class="logo" id="nav-logo">CINE<span>VAULT</span></div>
+  <div class="logo">CINE<span>VAULT</span></div>
   <ul class="nav-links">
-    <li><a data-view="home" class="active">Home</a></li>
+    <li><a data-view="home">Home</a></li>
     <li><a data-view="movies">Movies</a></li>
     <li><a data-view="tv">TV Shows</a></li>
     <li><a data-view="favorites">Favorites</a></li>
   </ul>
 </nav>
 
-<!-- APP -->
 <div id="app">
 
-  <!-- HOME -->
   <div id="home-view" class="view active">
     <h1 id="hero-title">Loading...</h1>
     <p id="hero-overview"></p>
   </div>
 
-  <!-- MOVIES -->
   <div id="movies-view" class="view">
     <div id="movies-grid"></div>
   </div>
 
-  <!-- TV -->
   <div id="tv-view" class="view">
     <div id="tv-grid"></div>
   </div>
 
-  <!-- DETAIL -->
   <div id="detail-view" class="view">
-    <button id="back-btn">Back</button>
     <h1 id="detail-title"></h1>
     <p id="detail-overview"></p>
   </div>
 
-  <!-- FAVORITES -->
   <div id="favorites-view" class="view">
     <h2>Favorites</h2>
     <div id="favs-grid"></div>
@@ -64,101 +57,93 @@
 <!-- ================= JAVASCRIPT ================= -->
 <script>
 
-const API_KEY = 'ec49f2d5bd16d2cf6f6a55185e08503c';
-const BASE = 'https://api.themoviedb.org/3';
+const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
+const BASE = "https://api.themoviedb.org/3";
 
 const state = {
-  currentView:'home',
-  favorites: JSON.parse(localStorage.getItem('favs') || '[]')
+  favorites: JSON.parse(localStorage.getItem("favs") || "[]")
 };
 
-// ---------- ROUTING ----------
-function showView(name, push=true){
-  $('.view').removeClass('active');
-  $(`#${name}-view`).addClass('active');
-
-  if(push){
-    history.pushState({view:name}, '', `#${name}`);
-  }
+// VIEW SWITCH
+function showView(name){
+  $(".view").removeClass("active");
+  $(`#${name}-view`).addClass("active");
 }
 
-window.onpopstate = (e)=>{
-  const view = e.state?.view || 'home';
-  showView(view,false);
-};
-
-// ---------- NAV ----------
-$(document).on('click','[data-view]',function(){
-  const v=$(this).data('view');
+// NAV
+$(document).on("click","[data-view]",function(){
+  const v = $(this).data("view");
   showView(v);
 
-  if(v==='movies') loadMovies();
-  if(v==='tv') loadTV();
-  if(v==='favorites') renderFavs();
+  if(v === "movies") loadMovies();
+  if(v === "tv") loadTV();
+  if(v === "favorites") renderFavs();
 });
 
-// ---------- API ----------
+// API CALL
 function tmdb(url){
   return $.get(`${BASE}${url}?api_key=${API_KEY}`);
 }
 
-// ---------- HOME ----------
+// HOME
 function loadHome(){
-  tmdb('/trending/movie/day').then(d=>{
-    const m=d.results[0];
-    $('#hero-title').text(m.title);
-    $('#hero-overview').text(m.overview);
+  tmdb("/trending/movie/day").then(d=>{
+    const m = d.results[0];
+    $("#hero-title").text(m.title);
+    $("#hero-overview").text(m.overview);
   });
 }
 
-// ---------- MOVIES ----------
+// MOVIES
 function loadMovies(){
-  $('#movies-grid').html('Loading...');
-  tmdb('/discover/movie').then(d=>{
-    $('#movies-grid').html(
-      d.results.map(m=>`<div class="card" data-id="${m.id}" data-type="movie">${m.title}</div>`).join('')
+  $("#movies-grid").html("Loading...");
+  tmdb("/discover/movie").then(d=>{
+    $("#movies-grid").html(
+      d.results.map(m =>
+        `<div class="card" data-id="${m.id}" data-type="movie">${m.title}</div>`
+      ).join("")
     );
   });
 }
 
-// ---------- TV ----------
+// TV
 function loadTV(){
-  $('#tv-grid').html('Loading...');
-  tmdb('/discover/tv').then(d=>{
-    $('#tv-grid').html(
-      d.results.map(t=>`<div class="card" data-id="${t.id}" data-type="tv">${t.name}</div>`).join('')
+  $("#tv-grid").html("Loading...");
+  tmdb("/discover/tv").then(d=>{
+    $("#tv-grid").html(
+      d.results.map(t =>
+        `<div class="card" data-id="${t.id}" data-type="tv">${t.name}</div>`
+      ).join("")
     );
   });
 }
 
-// ---------- DETAIL ----------
-$(document).on('click','.card',function(){
-  const id=$(this).data('id');
-  const type=$(this).data('type');
+// DETAIL VIEW
+$(document).on("click",".card",function(){
+  const id = $(this).data("id");
+  const type = $(this).data("type");
 
   tmdb(`/${type}/${id}`).then(d=>{
-    $('#detail-title').text(d.title || d.name);
-    $('#detail-overview').text(d.overview);
-    showView('detail');
+    $("#detail-title").text(d.title || d.name);
+    $("#detail-overview").text(d.overview);
+    showView("detail");
   });
 });
 
-// ---------- FAVORITES ----------
+// FAVORITES
 function renderFavs(){
-  $('#favs-grid').html(
-    state.favorites.map(f=>`<div>${f.title}</div>`).join('')
+  $("#favs-grid").html(
+    state.favorites.map(f => `<div class="card">${f.title}</div>`).join("")
   );
 }
 
-// ---------- INIT ----------
+// INIT
 $(function(){
   loadHome();
-
-  const hash = location.hash.replace('#','');
-  if(hash) showView(hash,false);
 });
 
 </script>
 
 </body>
 </html>
+  
