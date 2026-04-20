@@ -1,0 +1,20 @@
+body {
+  background:#0a0a0f;
+  color:white;
+  font-family:'DM Sans',sans-serif;
+}
+
+.view { display:none; }
+.view.active { display:block; }
+
+nav {
+  display:flex;
+  gap:1rem;
+  padding:1rem;
+  background:#111;
+}
+
+.card {
+  margin:10px;
+  cursor:pointer;
+}
