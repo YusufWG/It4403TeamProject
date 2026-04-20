@@ -7,6 +7,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
 <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -87,21 +88,23 @@ let page = 1;
 let currentGenre = "";
 let currentSort = "popular";
 
-// ---------- VIEW ----------
+// ---------------- VIEW ----------------
 function show(v){
   $(".view").removeClass("active");
   $(`#${v}-view`).addClass("active");
 }
 
-// ---------- API ----------
+// ---------------- API (FIXED) ----------------
 function api(url){
-  return $.get(`${BASE}${url}?api_key=${API_KEY}`)
-    .fail(err => console.log(err));
+  return $.ajax({
+    url: BASE + url,
+    data: { api_key: API_KEY }
+  });
 }
 
-// ---------- RENDER ----------
+// ---------------- RENDER ----------------
 function render(list){
-  return list.map(m=>{
+  return (list || []).map(m=>{
     const img = m.poster_path
       ? IMG + m.poster_path
       : "https://via.placeholder.com/300x450?text=No+Image";
@@ -109,34 +112,35 @@ function render(list){
     return `
       <div class="card" data-id="${m.id}">
         <img src="${img}">
-        <p>${m.title}</p>
+        <p>${m.title || m.name}</p>
       </div>
     `;
   }).join("");
 }
 
-// ---------- HOME ----------
+// ---------------- HOME ----------------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
     $("#home-grid").html(render(d.results));
   });
 }
 
-// ---------- GENRES ----------
+// ---------------- GENRES ----------------
 function loadGenres(){
   api("/genre/movie/list").then(d=>{
     d.genres.forEach(g=>{
-      $("#genreFilter").append(`<option value="${g.id}">${g.name}</option>`);
+      $("#genreFilter").append(
+        `<option value="${g.id}">${g.name}</option>`
+      );
     });
   });
 }
 
-// ---------- MOVIES (SORT + FILTER + PAGINATION) ----------
+// ---------------- MOVIES ----------------
 function loadMovies(){
   $("#movies-grid").html("Loading...");
 
-  api(`/movie/${currentSort}&page=${page}`).then(d=>{
-
+  api(`/movie/${currentSort}?page=${page}`).then(d=>{
     let results = d.results;
 
     if(currentGenre){
@@ -147,10 +151,12 @@ function loadMovies(){
 
     $("#movies-grid").html(render(results));
     $("#page").text(page);
+  }).catch(()=>{
+    $("#movies-grid").html("Failed to load movies.");
   });
 }
 
-// ---------- DETAIL (WITH ACTORS) ----------
+// ---------------- DETAIL ----------------
 function loadDetail(movie){
   currentMovie = movie;
 
@@ -158,19 +164,23 @@ function loadDetail(movie){
     ? IMG + movie.poster_path
     : "https://via.placeholder.com/300x450?text=No+Image";
 
+  $("#detail-img").attr("src", img);
+  $("#detail-title").text(movie.title);
+  $("#detail-overview").text(movie.overview);
+
   api(`/movie/${movie.id}/credits`).then(c=>{
-    let actors = c.cast.slice(0,5).map(a=>a.name).join(", ");
+    let actors = (c.cast || [])
+      .slice(0,5)
+      .map(a=>a.name)
+      .join(", ");
 
-    $("#detail-img").attr("src", img);
-    $("#detail-title").text(movie.title);
-    $("#detail-overview").text(movie.overview);
     $("#detail-actors").text("Actors: " + actors);
-
-    show("detail");
   });
+
+  show("detail");
 }
 
-// ---------- CLICK MOVIE ----------
+// ---------------- CLICK MOVIE ----------------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
@@ -179,13 +189,18 @@ $(document).on("click",".card",function(){
   });
 });
 
-// ---------- FAVORITES ----------
+// ---------------- BACK ----------------
+$(document).on("click","#back",function(){
+  show("movies");
+});
+
+// ---------------- FAVORITES ----------------
 $(document).on("click","#favBtn",function(){
   if(!currentMovie) return;
 
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-  if(!favs.some(f=>f.id===currentMovie.id)){
+  if(!favs.some(f => f.id === currentMovie.id)){
     favs.push(currentMovie);
   }
 
@@ -193,25 +208,13 @@ $(document).on("click","#favBtn",function(){
   alert("Added ❤️");
 });
 
-// ---------- LOAD FAVS ----------
+// ---------------- LOAD FAVORITES ----------------
 function loadFavs(){
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-
   $("#fav-grid").html(render(favs));
 }
 
-// ---------- CLICK FAV ----------
-$(document).on("click",".card",function(){
-  if($("#favorites-view").hasClass("active")){
-    let id = $(this).data("id");
-
-    api(`/movie/${id}`).then(m=>{
-      loadDetail(m);
-    });
-  }
-});
-
-// ---------- NAV ----------
+// ---------------- NAV ----------------
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
   show(v);
@@ -221,42 +224,46 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------- PAGINATION ----------
-$("#next").on("click",()=>{
-  page++;
-  loadMovies();
-});
-
-$("#prev").on("click",()=>{
-  if(page>1){
-    page--;
-    loadMovies();
-  }
-});
-
-// ---------- FILTERS ----------
-$("#genreFilter").on("change",function(){
-  currentGenre = $(this).val();
-  loadMovies();
-});
-
-$("#sortFilter").on("change",function(){
-  currentSort = $(this).val();
-  page = 1;
-  loadMovies();
-});
-
-// ---------- SEARCH ----------
+// ---------------- SEARCH ----------------
 $("#search").on("keyup",function(){
   let q = $(this).val();
-  if(q.length<2) return;
+
+  if(q.length < 2){
+    loadMovies();
+    return;
+  }
 
   api(`/search/movie?query=${q}`).then(d=>{
     $("#movies-grid").html(render(d.results));
   });
 });
 
-// ---------- INIT ----------
+// ---------------- FILTERS ----------------
+$("#sortFilter").on("change",function(){
+  currentSort = $(this).val();
+  page = 1;
+  loadMovies();
+});
+
+$("#genreFilter").on("change",function(){
+  currentGenre = $(this).val();
+  loadMovies();
+});
+
+// ---------------- PAGINATION ----------------
+$("#next").on("click",function(){
+  page++;
+  loadMovies();
+});
+
+$("#prev").on("click",function(){
+  if(page > 1){
+    page--;
+    loadMovies();
+  }
+});
+
+// ---------------- INIT ----------------
 $(function(){
   loadHome();
   loadGenres();
