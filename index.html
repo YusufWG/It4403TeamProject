@@ -50,17 +50,16 @@
 
 </div>
 
-<!-- ================= JAVASCRIPT ================= -->
 <script>
 
 const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
 const BASE = "https://api.themoviedb.org/3";
+const IMG_PATH = "https://image.tmdb.org/t/p/w500";
 
 let currentMovie = null;
-
 let favorites = JSON.parse(localStorage.getItem("favs") || "[]");
 
-// ---------- SPA VIEW ----------
+// ---------- SPA ----------
 function showView(v){
   $(".view").removeClass("active");
   $(`#${v}-view`).addClass("active");
@@ -69,13 +68,13 @@ function showView(v){
 // ---------- API ----------
 function api(url){
   return $.get(`${BASE}${url}?api_key=${API_KEY}`)
-    .fail(()=> alert("API error"));
+    .fail(()=> alert("API Error"));
 }
 
 // ---------- HOME ----------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
-    $("#home-grid").html(render(d.results));
+    $("#home-grid").html(renderMovies(d.results));
   });
 }
 
@@ -83,20 +82,21 @@ function loadHome(){
 function loadMovies(){
   $("#movies-grid").html("Loading...");
   api("/discover/movie").then(d=>{
-    $("#movies-grid").html(render(d.results));
+    $("#movies-grid").html(renderMovies(d.results));
   });
 }
 
-// ---------- RENDER ----------
-function render(list){
-  return list.map(m =>
-    `<div class="card" data-id="${m.id}">
-      ${m.title}
-    </div>`
-  ).join("");
+// ---------- FIXED RENDER (WITH IMAGES) ----------
+function renderMovies(list){
+  return list.map(m => `
+    <div class="card" data-id="${m.id}">
+      <img src="${m.poster_path ? IMG_PATH + m.poster_path : ''}" />
+      <p>${m.title}</p>
+    </div>
+  `).join("");
 }
 
-// ---------- CLICK MOVIE ----------
+// ---------- DETAIL ----------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
@@ -121,7 +121,12 @@ $("#favBtn").on("click",function(){
 // ---------- LOAD FAVS ----------
 function loadFavs(){
   $("#fav-grid").html(
-    favorites.map(f => `<div class="card">${f.title}</div>`).join("")
+    favorites.map(f => `
+      <div class="card">
+        <img src="${IMG_PATH + f.poster_path}" />
+        <p>${f.title}</p>
+      </div>
+    `).join("")
   );
 }
 
@@ -131,7 +136,7 @@ $("#search").on("keyup",function(){
   if(q.length < 2) return;
 
   api(`/search/movie&query=${q}`).then(d=>{
-    $("#movies-grid").html(render(d.results));
+    $("#movies-grid").html(renderMovies(d.results));
   });
 });
 
@@ -145,7 +150,7 @@ $(document).on("click","button[data-view]",function(){
   if(v === "favorites") loadFavs();
 });
 
-// BACK BUTTON
+// BACK
 $("#back").on("click",()=> showView("movies"));
 
 // INIT
