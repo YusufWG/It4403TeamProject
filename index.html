@@ -18,8 +18,9 @@
     <span class="holo">HOLO</span><span class="flix">FLIX</span>
   </div>
 
-  <div style="position:relative;">
+  <div style="display:flex; gap:5px; position:relative;">
     <input id="search" placeholder="Search movies..." />
+    <button id="searchBtn">Search</button>
     <div id="suggestions"></div>
   </div>
 
@@ -90,7 +91,7 @@ let currentMovie = null;
 let page = 1;
 let currentGenre = "";
 let currentSort = "popular";
-let searchTimer = null;
+let searchQuery = "";
 
 // ---------------- VIEW ----------------
 function show(v){
@@ -122,6 +123,32 @@ function render(list){
   }).join("");
 }
 
+// ---------------- MASTER DATA LOADER ----------------
+function loadMovies(){
+  $("#movies-grid").html("Loading...");
+
+  let url;
+
+  if(searchQuery.length > 0){
+    url = `/search/movie?query=${searchQuery}&page=${page}`;
+  } else {
+    url = `/movie/${currentSort}?page=${page}`;
+  }
+
+  api(url).then(d=>{
+    let results = d.results || [];
+
+    if(currentGenre){
+      results = results.filter(m =>
+        m.genre_ids && m.genre_ids.includes(Number(currentGenre))
+      );
+    }
+
+    $("#movies-grid").html(render(results));
+    $("#page").text(page);
+  });
+}
+
 // ---------------- HOME ----------------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
@@ -137,24 +164,6 @@ function loadGenres(){
         `<option value="${g.id}">${g.name}</option>`
       );
     });
-  });
-}
-
-// ---------------- MOVIES ----------------
-function loadMovies(){
-  $("#movies-grid").html("Loading...");
-
-  api(`/movie/${currentSort}?page=${page}`).then(d=>{
-    let results = d.results;
-
-    if(currentGenre){
-      results = results.filter(m =>
-        m.genre_ids.includes(Number(currentGenre))
-      );
-    }
-
-    $("#movies-grid").html(render(results));
-    $("#page").text(page);
   });
 }
 
@@ -226,63 +235,33 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------------- PAGINATION ----------------
-$("#next").on("click",function(){
-  page++;
-  loadMovies();
-});
-
-$("#prev").on("click",function(){
-  if(page > 1){
-    page--;
-    loadMovies();
-  }
-});
-
-// ---------------- FILTERS ----------------
-$("#sortFilter").on("change",function(){
-  currentSort = $(this).val();
+// ---------------- SEARCH BUTTON (FIXED MAIN FEATURE) ----------------
+$("#searchBtn").on("click", function(){
+  searchQuery = $("#search").val().trim();
   page = 1;
   loadMovies();
 });
 
-$("#genreFilter").on("change",function(){
-  currentGenre = $(this).val();
-  loadMovies();
-});
-
-// ---------------- SEARCH + LIVE SUGGESTIONS ----------------
+// ---------------- LIVE SEARCH SUGGESTIONS ----------------
 $("#search").on("input",function(){
   let q = $(this).val().trim();
 
-  clearTimeout(searchTimer);
-
   if(q.length < 2){
     $("#suggestions").empty();
-    loadMovies();
     return;
   }
 
-  searchTimer = setTimeout(()=>{
-    api(`/search/movie?query=${q}`).then(d=>{
-      let results = (d.results || []).slice(0,6);
+  api(`/search/movie?query=${q}`).then(d=>{
+    let results = (d.results || []).slice(0,5);
 
-      $("#suggestions").html(
-        results.map(m=>{
-          const img = m.poster_path
-            ? IMG + m.poster_path
-            : "https://via.placeholder.com/50x75";
-
-          return `
-            <div class="suggestion-item" data-id="${m.id}">
-              <img src="${img}" style="width:30px;margin-right:8px;border-radius:4px;">
-              ${m.title}
-            </div>
-          `;
-        }).join("")
-      );
-    });
-  },300);
+    $("#suggestions").html(
+      results.map(m=>`
+        <div class="suggestion-item" data-id="${m.id}">
+          ${m.title}
+        </div>
+      `).join("")
+    );
+  });
 });
 
 // ---------------- CLICK SUGGESTION ----------------
@@ -301,6 +280,32 @@ $(document).on("click",".suggestion-item",function(){
 $(document).on("click",function(e){
   if(!$(e.target).closest("#search,#suggestions").length){
     $("#suggestions").empty();
+  }
+});
+
+// ---------------- FILTERS (GLOBAL FIX) ----------------
+$("#sortFilter").on("change",function(){
+  currentSort = $(this).val();
+  page = 1;
+  loadMovies();
+});
+
+$("#genreFilter").on("change",function(){
+  currentGenre = $(this).val();
+  page = 1;
+  loadMovies();
+});
+
+// ---------------- PAGINATION ----------------
+$("#next").on("click",function(){
+  page++;
+  loadMovies();
+});
+
+$("#prev").on("click",function(){
+  if(page > 1){
+    page--;
+    loadMovies();
   }
 });
 
