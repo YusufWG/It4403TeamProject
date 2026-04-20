@@ -15,20 +15,16 @@ nav {
   flex-wrap: wrap;
 }
 
-/* BRAND COLORS */
+/* BRAND */
 .logo {
   font-family: 'Bebas Neue';
   font-size: 30px;
 }
 
-.holo {
-  color: orange;
-}
+.holo { color: orange; }
+.flix { color: purple; }
 
-.flix {
-  color: purple;
-}
-
+/* INPUT */
 input {
   padding: 8px;
   border-radius: 5px;
@@ -74,4 +70,18 @@ input {
   height: 240px;
   object-fit: cover;
   border-radius: 8px;
+}
+
+/* DETAIL VIEW */
+.detail-box {
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+}
+
+.detail-img {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
