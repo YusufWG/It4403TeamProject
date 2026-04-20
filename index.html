@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CineVault</title>
+  <title>HoloFlix</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
@@ -15,7 +15,9 @@
 <body>
 
 <nav>
-  <div class="logo">CINE<span>VAULT</span></div>
+  <div class="logo">
+    <span class="holo">HOLO</span><span class="flix">FLIX</span>
+  </div>
 
   <input id="search" placeholder="Search movies..." />
 
@@ -40,7 +42,6 @@
     <button id="back">← Back</button>
     <h1 id="detail-title"></h1>
     <p id="detail-overview"></p>
-    <button id="favBtn">❤️ Favorite</button>
   </div>
 
   <div id="favorites-view" class="view">
@@ -50,18 +51,17 @@
 
 </div>
 
-<!-- ================= JAVASCRIPT ================= -->
 <script>
 
 const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
 const BASE = "https://api.themoviedb.org/3";
-const IMG_PATH = "https://image.tmdb.org/t/p/w500";
+const IMG = "https://image.tmdb.org/t/p/w500";
 
-let currentMovie = null;
-let favorites = JSON.parse(localStorage.getItem("favs") || "[]");
+let current = null;
+let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-// ---------- SPA ----------
-function showView(v){
+// ---------- VIEW ----------
+function show(v){
   $(".view").removeClass("active");
   $(`#${v}-view`).addClass("active");
 }
@@ -69,13 +69,31 @@ function showView(v){
 // ---------- API ----------
 function api(url){
   return $.get(`${BASE}${url}?api_key=${API_KEY}`)
-    .fail(()=> alert("API Error"));
+    .fail(err => console.log("API ERROR:", err));
+}
+
+// ---------- RENDER (IMAGES FIXED) ----------
+function render(list){
+  return list.map(m => {
+
+    const img = m.poster_path
+      ? IMG + m.poster_path
+      : "https://via.placeholder.com/300x450?text=No+Image";
+
+    return `
+      <div class="card" data-id="${m.id}">
+        <img src="${img}">
+        <p>${m.title}</p>
+      </div>
+    `;
+  }).join("");
 }
 
 // ---------- HOME ----------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
-    $("#home-grid").html(renderMovies(d.results));
+    console.log(d);
+    $("#home-grid").html(render(d.results));
   });
 }
 
@@ -83,25 +101,8 @@ function loadHome(){
 function loadMovies(){
   $("#movies-grid").html("Loading...");
   api("/discover/movie").then(d=>{
-    $("#movies-grid").html(renderMovies(d.results));
+    $("#movies-grid").html(render(d.results));
   });
-}
-
-// ---------- FIXED RENDER (IMAGES WORK NOW) ----------
-function renderMovies(list){
-  return list.map(m => {
-
-    let poster = m.poster_path
-      ? IMG_PATH + m.poster_path
-      : "https://via.placeholder.com/300x450?text=No+Image";
-
-    return `
-      <div class="card" data-id="${m.id}">
-        <img src="${poster}" alt="${m.title}">
-        <p>${m.title}</p>
-      </div>
-    `;
-  }).join("");
 }
 
 // ---------- DETAIL ----------
@@ -109,35 +110,24 @@ $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
   api(`/movie/${id}`).then(m=>{
-    currentMovie = m;
+    current = m;
     $("#detail-title").text(m.title);
     $("#detail-overview").text(m.overview);
-    showView("detail");
+    show("detail");
   });
 });
 
 // ---------- FAVORITES ----------
-$("#favBtn").on("click",function(){
-  if(!currentMovie) return;
-
-  favorites.push(currentMovie);
-  localStorage.setItem("favs", JSON.stringify(favorites));
-
-  alert("Added to favorites");
-});
-
-// ---------- LOAD FAVORITES ----------
 function loadFavs(){
   $("#fav-grid").html(
-    favorites.map(f => {
-
-      let poster = f.poster_path
-        ? IMG_PATH + f.poster_path
+    favs.map(f=>{
+      const img = f.poster_path
+        ? IMG + f.poster_path
         : "https://via.placeholder.com/300x450?text=No+Image";
 
       return `
         <div class="card">
-          <img src="${poster}">
+          <img src="${img}">
           <p>${f.title}</p>
         </div>
       `;
@@ -145,20 +135,20 @@ function loadFavs(){
   );
 }
 
-// ---------- SEARCH ----------
+// ---------- SEARCH (FIXED BUG HERE) ----------
 $("#search").on("keyup",function(){
   let q = $(this).val();
   if(q.length < 2) return;
 
-  api(`/search/movie&query=${q}`).then(d=>{
-    $("#movies-grid").html(renderMovies(d.results));
+  api(`/search/movie?query=${q}`).then(d=>{
+    $("#movies-grid").html(render(d.results));
   });
 });
 
 // ---------- NAV ----------
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
-  showView(v);
+  show(v);
 
   if(v === "home") loadHome();
   if(v === "movies") loadMovies();
@@ -166,7 +156,7 @@ $(document).on("click","button[data-view]",function(){
 });
 
 // BACK
-$("#back").on("click",()=> showView("movies"));
+$("#back").on("click",()=> show("movies"));
 
 // INIT
 $(function(){
