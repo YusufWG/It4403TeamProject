@@ -50,6 +50,7 @@
 
 </div>
 
+<!-- ================= JAVASCRIPT ================= -->
 <script>
 
 const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
@@ -86,14 +87,21 @@ function loadMovies(){
   });
 }
 
-// ---------- FIXED RENDER (WITH IMAGES) ----------
+// ---------- FIXED RENDER (IMAGES WORK NOW) ----------
 function renderMovies(list){
-  return list.map(m => `
-    <div class="card" data-id="${m.id}">
-      <img src="${m.poster_path ? IMG_PATH + m.poster_path : ''}" />
-      <p>${m.title}</p>
-    </div>
-  `).join("");
+  return list.map(m => {
+
+    let poster = m.poster_path
+      ? IMG_PATH + m.poster_path
+      : "https://via.placeholder.com/300x450?text=No+Image";
+
+    return `
+      <div class="card" data-id="${m.id}">
+        <img src="${poster}" alt="${m.title}">
+        <p>${m.title}</p>
+      </div>
+    `;
+  }).join("");
 }
 
 // ---------- DETAIL ----------
@@ -118,15 +126,22 @@ $("#favBtn").on("click",function(){
   alert("Added to favorites");
 });
 
-// ---------- LOAD FAVS ----------
+// ---------- LOAD FAVORITES ----------
 function loadFavs(){
   $("#fav-grid").html(
-    favorites.map(f => `
-      <div class="card">
-        <img src="${IMG_PATH + f.poster_path}" />
-        <p>${f.title}</p>
-      </div>
-    `).join("")
+    favorites.map(f => {
+
+      let poster = f.poster_path
+        ? IMG_PATH + f.poster_path
+        : "https://via.placeholder.com/300x450?text=No+Image";
+
+      return `
+        <div class="card">
+          <img src="${poster}">
+          <p>${f.title}</p>
+        </div>
+      `;
+    }).join("")
   );
 }
 
