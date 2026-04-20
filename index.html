@@ -38,11 +38,7 @@
     <div id="movies-grid"></div>
   </div>
 
-  <div id="detail-view" class="view">
-    <button id="back">← Back</button>
-    <h1 id="detail-title"></h1>
-    <p id="detail-overview"></p>
-  </div>
+  <div id="detail-view" class="view"></div>
 
   <div id="favorites-view" class="view">
     <h1>Favorites</h1>
@@ -57,25 +53,24 @@ const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
 const BASE = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p/w500";
 
-let current = null;
+let currentMovie = null;
 let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-// ---------- VIEW ----------
-function show(v){
+// ---------------- VIEW ----------------
+function show(view){
   $(".view").removeClass("active");
-  $(`#${v}-view`).addClass("active");
+  $(`#${view}-view`).addClass("active");
 }
 
-// ---------- API ----------
+// ---------------- API ----------------
 function api(url){
   return $.get(`${BASE}${url}?api_key=${API_KEY}`)
-    .fail(err => console.log("API ERROR:", err));
+    .fail(err => console.log("API ERROR", err));
 }
 
-// ---------- RENDER (IMAGES FIXED) ----------
+// ---------------- RENDER MOVIES ----------------
 function render(list){
   return list.map(m => {
-
     const img = m.poster_path
       ? IMG + m.poster_path
       : "https://via.placeholder.com/300x450?text=No+Image";
@@ -89,15 +84,14 @@ function render(list){
   }).join("");
 }
 
-// ---------- HOME ----------
+// ---------------- HOME ----------------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
-    console.log(d);
     $("#home-grid").html(render(d.results));
   });
 }
 
-// ---------- MOVIES ----------
+// ---------------- MOVIES ----------------
 function loadMovies(){
   $("#movies-grid").html("Loading...");
   api("/discover/movie").then(d=>{
@@ -105,28 +99,58 @@ function loadMovies(){
   });
 }
 
-// ---------- DETAIL ----------
+// ---------------- DETAIL VIEW (FULL FIXED) ----------------
+function loadDetail(movie){
+  const img = movie.poster_path
+    ? IMG + movie.poster_path
+    : "https://via.placeholder.com/300x450?text=No+Image";
+
+  $("#detail-view").html(`
+    <button id="back">← Back</button>
+
+    <div class="detail-box">
+      <img src="${img}" class="detail-img">
+
+      <h1>${movie.title}</h1>
+      <p>${movie.overview}</p>
+
+      <button id="favBtn">❤️ Add to Favorites</button>
+    </div>
+  `);
+
+  show("detail");
+}
+
+// ---------------- CLICK MOVIE ----------------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
   api(`/movie/${id}`).then(m=>{
-    current = m;
-    $("#detail-title").text(m.title);
-    $("#detail-overview").text(m.overview);
-    show("detail");
+    currentMovie = m;
+    loadDetail(m);
   });
 });
 
-// ---------- FAVORITES ----------
+// ---------------- FAVORITE ----------------
+$(document).on("click","#favBtn",function(){
+  if(!currentMovie) return;
+
+  favs.push(currentMovie);
+  localStorage.setItem("favs", JSON.stringify(favs));
+
+  alert("Added to Favorites ❤️");
+});
+
+// ---------------- FAVORITES PAGE ----------------
 function loadFavs(){
   $("#fav-grid").html(
-    favs.map(f=>{
+    favs.map(f => {
       const img = f.poster_path
         ? IMG + f.poster_path
         : "https://via.placeholder.com/300x450?text=No+Image";
 
       return `
-        <div class="card">
+        <div class="card fav-card" data-id="${f.id}">
           <img src="${img}">
           <p>${f.title}</p>
         </div>
@@ -135,17 +159,17 @@ function loadFavs(){
   );
 }
 
-// ---------- SEARCH (FIXED BUG HERE) ----------
-$("#search").on("keyup",function(){
-  let q = $(this).val();
-  if(q.length < 2) return;
+// ---------------- CLICK FAVORITE -> DETAILS ----------------
+$(document).on("click",".fav-card",function(){
+  let id = $(this).data("id");
 
-  api(`/search/movie?query=${q}`).then(d=>{
-    $("#movies-grid").html(render(d.results));
+  api(`/movie/${id}`).then(m=>{
+    currentMovie = m;
+    loadDetail(m);
   });
 });
 
-// ---------- NAV ----------
+// ---------------- NAV ----------------
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
   show(v);
@@ -155,10 +179,22 @@ $(document).on("click","button[data-view]",function(){
   if(v === "favorites") loadFavs();
 });
 
-// BACK
-$("#back").on("click",()=> show("movies"));
+// ---------------- BACK ----------------
+$(document).on("click","#back",function(){
+  show("movies");
+});
 
-// INIT
+// ---------------- SEARCH ----------------
+$("#search").on("keyup",function(){
+  let q = $(this).val();
+  if(q.length < 2) return;
+
+  api(`/search/movie?query=${q}`).then(d=>{
+    $("#movies-grid").html(render(d.results));
+  });
+});
+
+// ---------------- INIT ----------------
 $(function(){
   loadHome();
 });
