@@ -28,18 +28,31 @@
 
 <div id="app">
 
+  <!-- HOME -->
   <div id="home-view" class="view active">
     <h1>Trending Movies</h1>
     <div id="home-grid"></div>
   </div>
 
+  <!-- MOVIES -->
   <div id="movies-view" class="view">
     <h1>Movies</h1>
     <div id="movies-grid"></div>
   </div>
 
-  <div id="detail-view" class="view"></div>
+  <!-- DETAIL (FIXED STRUCTURE) -->
+  <div id="detail-view" class="view">
+    <button id="back">← Back</button>
 
+    <div class="detail-box">
+      <img id="detail-img" class="detail-img" />
+      <h1 id="detail-title"></h1>
+      <p id="detail-overview"></p>
+      <button id="favBtn">❤️ Add to Favorites</button>
+    </div>
+  </div>
+
+  <!-- FAVORITES -->
   <div id="favorites-view" class="view">
     <h1>Favorites</h1>
     <div id="fav-grid"></div>
@@ -54,21 +67,20 @@ const BASE = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p/w500";
 
 let currentMovie = null;
-let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-// ---------------- VIEW ----------------
-function show(view){
+// ---------- VIEW ----------
+function show(v){
   $(".view").removeClass("active");
-  $(`#${view}-view`).addClass("active");
+  $(`#${v}-view`).addClass("active");
 }
 
-// ---------------- API ----------------
+// ---------- API ----------
 function api(url){
   return $.get(`${BASE}${url}?api_key=${API_KEY}`)
     .fail(err => console.log("API ERROR", err));
 }
 
-// ---------------- RENDER MOVIES ----------------
+// ---------- RENDER ----------
 function render(list){
   return list.map(m => {
     const img = m.poster_path
@@ -84,14 +96,14 @@ function render(list){
   }).join("");
 }
 
-// ---------------- HOME ----------------
+// ---------- HOME ----------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
     $("#home-grid").html(render(d.results));
   });
 }
 
-// ---------------- MOVIES ----------------
+// ---------- MOVIES ----------
 function loadMovies(){
   $("#movies-grid").html("Loading...");
   api("/discover/movie").then(d=>{
@@ -99,50 +111,49 @@ function loadMovies(){
   });
 }
 
-// ---------------- DETAIL VIEW (FULL FIXED) ----------------
+// ---------- DETAIL (FIXED PROPERLY) ----------
 function loadDetail(movie){
+  currentMovie = movie;
+
   const img = movie.poster_path
     ? IMG + movie.poster_path
     : "https://via.placeholder.com/300x450?text=No+Image";
 
-  $("#detail-view").html(`
-    <button id="back">← Back</button>
-
-    <div class="detail-box">
-      <img src="${img}" class="detail-img">
-
-      <h1>${movie.title}</h1>
-      <p>${movie.overview}</p>
-
-      <button id="favBtn">❤️ Add to Favorites</button>
-    </div>
-  `);
+  $("#detail-img").attr("src", img);
+  $("#detail-title").text(movie.title);
+  $("#detail-overview").text(movie.overview);
 
   show("detail");
 }
 
-// ---------------- CLICK MOVIE ----------------
+// ---------- CLICK MOVIE ----------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
   api(`/movie/${id}`).then(m=>{
-    currentMovie = m;
     loadDetail(m);
   });
 });
 
-// ---------------- FAVORITE ----------------
+// ---------- FAVORITES (FIXED + SAFE) ----------
 $(document).on("click","#favBtn",function(){
   if(!currentMovie) return;
 
-  favs.push(currentMovie);
+  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+
+  if(!favs.some(f => f.id === currentMovie.id)){
+    favs.push(currentMovie);
+  }
+
   localStorage.setItem("favs", JSON.stringify(favs));
 
   alert("Added to Favorites ❤️");
 });
 
-// ---------------- FAVORITES PAGE ----------------
+// ---------- LOAD FAVORITES ----------
 function loadFavs(){
+  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+
   $("#fav-grid").html(
     favs.map(f => {
       const img = f.poster_path
@@ -159,17 +170,16 @@ function loadFavs(){
   );
 }
 
-// ---------------- CLICK FAVORITE -> DETAILS ----------------
+// ---------- CLICK FAVORITE → DETAIL ----------
 $(document).on("click",".fav-card",function(){
   let id = $(this).data("id");
 
   api(`/movie/${id}`).then(m=>{
-    currentMovie = m;
     loadDetail(m);
   });
 });
 
-// ---------------- NAV ----------------
+// ---------- NAV ----------
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
   show(v);
@@ -179,12 +189,12 @@ $(document).on("click","button[data-view]",function(){
   if(v === "favorites") loadFavs();
 });
 
-// ---------------- BACK ----------------
+// ---------- BACK ----------
 $(document).on("click","#back",function(){
   show("movies");
 });
 
-// ---------------- SEARCH ----------------
+// ---------- SEARCH ----------
 $("#search").on("keyup",function(){
   let q = $(this).val();
   if(q.length < 2) return;
@@ -194,7 +204,7 @@ $("#search").on("keyup",function(){
   });
 });
 
-// ---------------- INIT ----------------
+// ---------- INIT ----------
 $(function(){
   loadHome();
 });
