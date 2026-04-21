@@ -83,13 +83,11 @@ const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
 const BASE = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p/w500";
 
-// ---------------- STATE ----------------
 let currentMovie = null;
 let page = 1;
 let currentGenre = "";
 let currentSort = "popular";
 let searchQuery = "";
-
 let historyStack = ["home"];
 
 // ---------------- VIEW ----------------
@@ -129,40 +127,20 @@ function api(url){
   });
 }
 
-// ---------------- GENRES (FIXED + BULLETPROOF) ----------------
+// ---------------- GENRES ----------------
 function loadGenres(){
-  const url = `${BASE}/genre/movie/list?api_key=${API_KEY}`;
-
-  console.log("Loading genres...");
-
-  fetch(url)
-    .then(res => {
-      if(!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
-    })
-    .then(data => {
-      console.log("Genres loaded:", data);
-
-      if(!data || !data.genres){
-        $("#genreFilter").html(`<option value="">No genres</option>`);
-        return;
-      }
-
+  fetch(`${BASE}/genre/movie/list?api_key=${API_KEY}`)
+    .then(r => r.json())
+    .then(d => {
       let html = `<option value="">Genres</option>`;
-
-      data.genres.forEach(g=>{
+      d.genres.forEach(g=>{
         html += `<option value="${g.id}">${g.name}</option>`;
       });
-
       $("#genreFilter").html(html);
-    })
-    .catch(err=>{
-      console.error("Genre error:", err);
-      $("#genreFilter").html(`<option value="">Genres failed</option>`);
     });
 }
 
-// ---------------- FILTER ENGINE ----------------
+// ---------------- FILTER ----------------
 function applyFilters(list){
   if(currentGenre){
     list = list.filter(m =>
@@ -174,15 +152,22 @@ function applyFilters(list){
 
 // ---------------- RENDER ----------------
 function render(list){
+  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+
   return (list || []).map(m=>{
     const img = m.poster_path
       ? IMG + m.poster_path
       : "https://via.placeholder.com/300x450?text=No+Image";
 
+    let isFav = favs.some(f => f.id === m.id);
+
     return `
       <div class="card" data-id="${m.id}">
         <img src="${img}">
         <p>${m.title}</p>
+        <button class="fav-toggle" data-id="${m.id}">
+          ${isFav ? "💔 Remove" : "❤️ Favorite"}
+        </button>
       </div>
     `;
   }).join("");
@@ -221,23 +206,47 @@ function loadDetail(movie){
 
   show("detail");
 
-  $("#detail-img").attr(
-    "src",
-    movie.poster_path ? IMG + movie.poster_path : ""
-  );
-
+  $("#detail-img").attr("src", movie.poster_path ? IMG + movie.poster_path : "");
   $("#detail-title").text(movie.title);
   $("#detail-overview").text(movie.overview);
 
   api(`/movie/${movie.id}/credits`).then(c=>{
     $("#detail-actors").text(
-      "Actors: " +
-      (c.cast || []).slice(0,5).map(a=>a.name).join(", ")
+      "Actors: " + (c.cast || []).slice(0,5).map(a=>a.name).join(", ")
     );
   });
+
+  updateFavButton();
 }
 
-// ---------------- CLICK MOVIE ----------------
+// ---------------- FAVORITE TOGGLE ----------------
+function updateFavButton(){
+  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+
+  let isFav = favs.some(f => f.id === currentMovie.id);
+
+  $("#favBtn").text(isFav ? "💔 Remove Favorite" : "❤️ Add Favorite");
+}
+
+$("#favBtn").on("click",function(){
+  if(!currentMovie) return;
+
+  let favs = JSON.parse(localStorage.getItem("favs") || "[]");
+
+  let exists = favs.some(f => f.id === currentMovie.id);
+
+  if(exists){
+    favs = favs.filter(f => f.id !== currentMovie.id);
+  } else {
+    favs.push(currentMovie);
+  }
+
+  localStorage.setItem("favs", JSON.stringify(favs));
+
+  updateFavButton();
+});
+
+// ---------------- CLICK CARD ----------------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
@@ -246,23 +255,32 @@ $(document).on("click",".card",function(){
   });
 });
 
-// ---------------- BACK ----------------
-$("#back").on("click",function(){
-  goBack();
-});
+// ---------------- REMOVE / TOGGLE FROM GRID ----------------
+$(document).on("click",".fav-toggle",function(e){
+  e.stopPropagation();
 
-// ---------------- FAVORITES ----------------
-$("#favBtn").on("click",function(){
-  if(!currentMovie) return;
+  let id = $(this).data("id");
 
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
-  if(!favs.some(f => f.id === currentMovie.id)){
-    favs.push(currentMovie);
+  let exists = favs.some(f => f.id === id);
+
+  if(exists){
+    favs = favs.filter(f => f.id !== id);
+  } else {
+    let movie = $(this).closest(".card").data("movie");
   }
 
   localStorage.setItem("favs", JSON.stringify(favs));
-  alert("Added ❤️");
+
+  loadFavs();
+  loadMovies();
+  loadHome();
+});
+
+// ---------------- BACK ----------------
+$("#back").on("click",function(){
+  goBack();
 });
 
 // ---------------- NAV ----------------
@@ -276,83 +294,9 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------------- SEARCH ----------------
-$("#searchBtn").on("click",function(){
-  searchQuery = $("#search").val().trim();
-  page = 1;
-  loadMovies();
-});
-
-// ---------------- LIVE SEARCH ----------------
-$("#search").on("input",function(){
-  let q = $(this).val().trim();
-
-  if(q.length < 2){
-    $("#suggestions").empty();
-    return;
-  }
-
-  api(`/search/movie?query=${q}`).then(d=>{
-    $("#suggestions").html(
-      (d.results || []).slice(0,5).map(m=>`
-        <div class="suggestion-item" data-id="${m.id}">
-          ${m.title}
-        </div>
-      `).join("")
-    );
-  });
-});
-
-// ---------------- SUGGESTION CLICK ----------------
-$(document).on("click",".suggestion-item",function(){
-  let id = $(this).data("id");
-
-  $("#suggestions").empty();
-  $("#search").val("");
-
-  api(`/movie/${id}`).then(m=>{
-    loadDetail(m);
-  });
-});
-
-// ---------------- CLOSE SUGGESTIONS ----------------
-$(document).on("click",function(e){
-  if(!$(e.target).closest("#search,#suggestions").length){
-    $("#suggestions").empty();
-  }
-});
-
-// ---------------- FILTERS ----------------
-$("#genreFilter").on("change",function(){
-  currentGenre = $(this).val();
-  loadHome();
-  loadMovies();
-  loadFavs();
-});
-
-$("#sortFilter").on("change",function(){
-  currentSort = $(this).val();
-  loadHome();
-  loadMovies();
-  loadFavs();
-});
-
-// ---------------- PAGINATION ----------------
-$("#next").on("click",function(){
-  page++;
-  loadMovies();
-});
-
-$("#prev").on("click",function(){
-  if(page > 1){
-    page--;
-    loadMovies();
-  }
-});
-
 // ---------------- INIT ----------------
 $(function(){
-  loadGenres();   // ⭐ GUARANTEED FIX
+  loadGenres();
   show("home", false);
   loadHome();
 });
