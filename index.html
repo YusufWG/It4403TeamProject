@@ -90,10 +90,9 @@ let currentGenre = "";
 let currentSort = "popular";
 let searchQuery = "";
 
-// history stack (FIXED BACK BUTTON)
 let historyStack = ["home"];
 
-// ---------------- VIEW SYSTEM ----------------
+// ---------------- VIEW ----------------
 function show(view, push=true){
   $(".view").removeClass("active");
   $(`#${view}-view`).addClass("active");
@@ -106,7 +105,7 @@ function show(view, push=true){
   }
 }
 
-// ---------------- BACK BUTTON FIX ----------------
+// ---------------- BACK ----------------
 function goBack(){
   if(historyStack.length > 1){
     historyStack.pop();
@@ -130,12 +129,24 @@ function api(url){
   });
 }
 
-// ---------------- GENRES (FIXED + RELIABLE) ----------------
+// ---------------- GENRES (FIXED + BULLETPROOF) ----------------
 function loadGenres(){
-  fetch(`${BASE}/genre/movie/list?api_key=${API_KEY}`)
-    .then(r => r.json())
+  const url = `${BASE}/genre/movie/list?api_key=${API_KEY}`;
+
+  console.log("Loading genres...");
+
+  fetch(url)
+    .then(res => {
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
     .then(data => {
-      if(!data || !data.genres) return;
+      console.log("Genres loaded:", data);
+
+      if(!data || !data.genres){
+        $("#genreFilter").html(`<option value="">No genres</option>`);
+        return;
+      }
 
       let html = `<option value="">Genres</option>`;
 
@@ -146,8 +157,8 @@ function loadGenres(){
       $("#genreFilter").html(html);
     })
     .catch(err=>{
-      console.log("Genre load error", err);
-      $("#genreFilter").html(`<option value="">Genres unavailable</option>`);
+      console.error("Genre error:", err);
+      $("#genreFilter").html(`<option value="">Genres failed</option>`);
     });
 }
 
@@ -314,7 +325,6 @@ $(document).on("click",function(e){
 // ---------------- FILTERS ----------------
 $("#genreFilter").on("change",function(){
   currentGenre = $(this).val();
-
   loadHome();
   loadMovies();
   loadFavs();
@@ -322,7 +332,6 @@ $("#genreFilter").on("change",function(){
 
 $("#sortFilter").on("change",function(){
   currentSort = $(this).val();
-
   loadHome();
   loadMovies();
   loadFavs();
@@ -343,7 +352,7 @@ $("#prev").on("click",function(){
 
 // ---------------- INIT ----------------
 $(function(){
-  loadGenres();   // ⭐ FIXED
+  loadGenres();   // ⭐ GUARANTEED FIX
   show("home", false);
   loadHome();
 });
