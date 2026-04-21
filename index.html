@@ -6,7 +6,9 @@
 <title>HoloFlix</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
 <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -40,13 +42,11 @@
 
 <div id="app">
 
-  <!-- HOME -->
   <div id="home-view" class="view active">
-    <h1>Trending Movies</h1>
+    <h1>Trending</h1>
     <div id="home-grid"></div>
   </div>
 
-  <!-- MOVIES -->
   <div id="movies-view" class="view">
     <h1>Movies</h1>
     <div id="movies-grid"></div>
@@ -58,7 +58,6 @@
     </div>
   </div>
 
-  <!-- DETAIL -->
   <div id="detail-view" class="view">
     <button id="back">← Back</button>
 
@@ -68,11 +67,10 @@
       <p id="detail-overview"></p>
       <p id="detail-actors"></p>
 
-      <button id="favBtn">❤️ Add to Favorites</button>
+      <button id="favBtn">❤️ Favorite</button>
     </div>
   </div>
 
-  <!-- FAVORITES -->
   <div id="favorites-view" class="view">
     <h1>Favorites</h1>
     <div id="fav-grid"></div>
@@ -116,17 +114,19 @@ function render(list){
     return `
       <div class="card" data-id="${m.id}">
         <img src="${img}">
-        <p>${m.title || m.name}</p>
+        <p>${m.title}</p>
       </div>
     `;
   }).join("");
 }
 
-// ---------------- MASTER DATA ENGINE ----------------
-function fetchData(callback){
+// ---------------- DATA ENGINE ----------------
+function loadMovies(){
+  $("#movies-grid").html("Loading...");
+
   let url;
 
-  if(searchQuery.length > 0){
+  if(searchQuery){
     url = `/search/movie?query=${searchQuery}&page=${page}`;
   } else {
     url = `/movie/${currentSort}?page=${page}`;
@@ -137,40 +137,37 @@ function fetchData(callback){
 
     if(currentGenre){
       results = results.filter(m =>
-        m.genre_ids && m.genre_ids.includes(Number(currentGenre))
+        m.genre_ids?.includes(Number(currentGenre))
       );
     }
 
-    callback(results);
+    $("#movies-grid").html(render(results));
+    $("#page").text(page);
   });
 }
 
 // ---------------- HOME ----------------
 function loadHome(){
   api("/trending/movie/day").then(d=>{
-    fetchData(filtered=>{
-      $("#home-grid").html(render(filtered));
-    });
+    let results = d.results || [];
+
+    if(currentGenre){
+      results = results.filter(m =>
+        m.genre_ids?.includes(Number(currentGenre))
+      );
+    }
+
+    $("#home-grid").html(render(results));
   });
 }
 
-// ---------------- MOVIES ----------------
-function loadMovies(){
-  $("#movies-grid").html("Loading...");
-
-  fetchData(results=>{
-    $("#movies-grid").html(render(results));
-    $("#page").text(page);
-  });
-}
-
-// ---------------- FAVORITES (FILTERED) ----------------
+// ---------------- FAVORITES ----------------
 function loadFavs(){
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
 
   if(currentGenre){
     favs = favs.filter(m =>
-      m.genre_ids && m.genre_ids.includes(Number(currentGenre))
+      m.genre_ids?.includes(Number(currentGenre))
     );
   }
 
@@ -181,27 +178,25 @@ function loadFavs(){
 function loadDetail(movie){
   currentMovie = movie;
 
-  const img = movie.poster_path
-    ? IMG + movie.poster_path
-    : "https://via.placeholder.com/300x450?text=No+Image";
+  $("#detail-img").attr(
+    "src",
+    movie.poster_path ? IMG + movie.poster_path : ""
+  );
 
-  $("#detail-img").attr("src", img);
   $("#detail-title").text(movie.title);
   $("#detail-overview").text(movie.overview);
 
   api(`/movie/${movie.id}/credits`).then(c=>{
-    let actors = (c.cast || [])
-      .slice(0,5)
-      .map(a=>a.name)
-      .join(", ");
-
-    $("#detail-actors").text("Actors: " + actors);
+    $("#detail-actors").text(
+      "Actors: " +
+      (c.cast || []).slice(0,5).map(a=>a.name).join(", ")
+    );
   });
 
   show("detail");
 }
 
-// ---------------- CLICK MOVIE ----------------
+// ---------------- CLICK CARD ----------------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
@@ -211,12 +206,10 @@ $(document).on("click",".card",function(){
 });
 
 // ---------------- BACK ----------------
-$(document).on("click","#back",function(){
-  show("movies");
-});
+$("#back").on("click",()=> show("movies"));
 
-// ---------------- FAVORITES ----------------
-$(document).on("click","#favBtn",function(){
+// ---------------- FAVORITE ----------------
+$("#favBtn").on("click",function(){
   if(!currentMovie) return;
 
   let favs = JSON.parse(localStorage.getItem("favs") || "[]");
@@ -239,14 +232,14 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------------- SEARCH BUTTON (FIXED) ----------------
-$("#searchBtn").on("click", function(){
+// ---------------- SEARCH ----------------
+$("#searchBtn").on("click",function(){
   searchQuery = $("#search").val().trim();
   page = 1;
-  reloadAll();
+  loadMovies();
 });
 
-// ---------------- LIVE SUGGESTIONS ----------------
+// ---------------- LIVE SEARCH ----------------
 $("#search").on("input",function(){
   let q = $(this).val().trim();
 
@@ -256,10 +249,8 @@ $("#search").on("input",function(){
   }
 
   api(`/search/movie?query=${q}`).then(d=>{
-    let results = (d.results || []).slice(0,5);
-
     $("#suggestions").html(
-      results.map(m=>`
+      (d.results || []).slice(0,5).map(m=>`
         <div class="suggestion-item" data-id="${m.id}">
           ${m.title}
         </div>
@@ -287,38 +278,34 @@ $(document).on("click",function(e){
   }
 });
 
-// ---------------- FILTERS (GLOBAL FIXED) ----------------
+// ---------------- FILTERS ----------------
 $("#sortFilter").on("change",function(){
   currentSort = $(this).val();
   page = 1;
-  reloadAll();
+  loadMovies();
 });
 
 $("#genreFilter").on("change",function(){
   currentGenre = $(this).val();
   page = 1;
-  reloadAll();
+
+  loadHome();
+  loadMovies();
+  loadFavs();
 });
 
 // ---------------- PAGINATION ----------------
-$("#next").on("click",function(){
+$("#next").on("click",()=>{
   page++;
   loadMovies();
 });
 
-$("#prev").on("click",function(){
-  if(page > 1){
+$("#prev").on("click",()=>{
+  if(page>1){
     page--;
     loadMovies();
   }
 });
-
-// ---------------- GLOBAL RELOAD ENGINE ----------------
-function reloadAll(){
-  if($("#home-view").hasClass("active")) loadHome();
-  if($("#movies-view").hasClass("active")) loadMovies();
-  if($("#favorites-view").hasClass("active")) loadFavs();
-}
 
 // ---------------- INIT ----------------
 $(function(){
