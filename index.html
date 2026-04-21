@@ -61,7 +61,7 @@
     <button id="back">← Back</button>
 
     <div class="detail-box">
-      <img id="detail-img"/>
+      <img id="detail-img" />
       <h1 id="detail-title"></h1>
       <p id="detail-overview"></p>
       <p id="detail-actors"></p>
@@ -89,12 +89,10 @@ let page = 1;
 let currentGenre = "";
 let currentSort = "popular";
 let searchQuery = "";
-
-// ⭐ REAL HISTORY STACK (FIXED BACK BUTTON)
 let historyStack = ["home"];
 
 // ---------------- VIEW ----------------
-function show(view, push = true){
+function show(view, push=true){
   $(".view").removeClass("active");
   $(`#${view}-view`).addClass("active");
 
@@ -130,6 +128,30 @@ function api(url){
   });
 }
 
+// ---------------- GENRES (FIXED) ----------------
+function loadGenres(){
+  api("/genre/movie/list").then(d=>{
+    let genres = d.genres || [];
+
+    $("#genreFilter").html(`
+      <option value="">Genres</option>
+      ${genres.map(g=>`
+        <option value="${g.id}">${g.name}</option>
+      `).join("")}
+    `);
+  });
+}
+
+// ---------------- FILTER ENGINE ----------------
+function applyFilters(list){
+  if(currentGenre){
+    list = list.filter(m =>
+      m.genre_ids?.includes(Number(currentGenre))
+    );
+  }
+  return list;
+}
+
 // ---------------- RENDER ----------------
 function render(list){
   return (list || []).map(m=>{
@@ -144,16 +166,6 @@ function render(list){
       </div>
     `;
   }).join("");
-}
-
-// ---------------- FILTER ENGINE ----------------
-function applyFilters(list){
-  if(currentGenre){
-    list = list.filter(m =>
-      m.genre_ids?.includes(Number(currentGenre))
-    );
-  }
-  return list;
 }
 
 // ---------------- HOME ----------------
@@ -237,6 +249,7 @@ $("#favBtn").on("click",function(){
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
   show(v);
+
   if(v==="home") loadHome();
   if(v==="movies") loadMovies();
   if(v==="favorites") loadFavs();
@@ -288,16 +301,18 @@ $(document).on("click",function(e){
   }
 });
 
-// ---------------- FILTERS ----------------
-$("#sortFilter").on("change",function(){
-  currentSort = $(this).val();
+// ---------------- FILTERS (FULLY FIXED) ----------------
+$("#genreFilter").on("change",function(){
+  currentGenre = $(this).val();
+
   loadHome();
   loadMovies();
   loadFavs();
 });
 
-$("#genreFilter").on("change",function(){
-  currentGenre = $(this).val();
+$("#sortFilter").on("change",function(){
+  currentSort = $(this).val();
+
   loadHome();
   loadMovies();
   loadFavs();
@@ -310,7 +325,7 @@ $("#next").on("click",function(){
 });
 
 $("#prev").on("click",function(){
-  if(page>1){
+  if(page > 1){
     page--;
     loadMovies();
   }
@@ -318,6 +333,7 @@ $("#prev").on("click",function(){
 
 // ---------------- INIT ----------------
 $(function(){
+  loadGenres();   // ⭐ FIX: restores genre dropdown
   show("home", false);
   loadHome();
 });
