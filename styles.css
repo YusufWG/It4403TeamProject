@@ -5,19 +5,25 @@ body{
   color:white;
 }
 
+/* ================= NAVBAR ================= */
 nav{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:15px;
+  padding:12px 20px;
   background:#111;
+  gap:15px;
   flex-wrap:wrap;
-  gap:10px;
 }
 
+/* LOGO */
 .logo{
   font-family:"Bebas Neue";
-  font-size:28px;
+  font-size:30px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:140px;
 }
 
 .holo{
@@ -28,22 +34,47 @@ nav{
   color:purple;
 }
 
-input, select, button{
-  padding:8px;
-  border:none;
-  border-radius:5px;
+/* SEARCH + FILTER GROUP */
+nav div{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  position:relative;
+  flex:1;
+  justify-content:center;
 }
 
-button{
-  cursor:pointer;
-  background:#222;
+/* INPUT + SELECT */
+nav input,
+nav select{
+  padding:8px 10px;
+  border-radius:6px;
+  border:none;
+  outline:none;
+  background:#1f1f1f;
   color:white;
 }
 
-button:hover{
+nav input{
+  width:180px;
+}
+
+/* BUTTONS */
+nav button{
+  padding:8px 12px;
+  border-radius:6px;
+  border:none;
+  background:#222;
+  color:white;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+nav button:hover{
   background:#333;
 }
 
+/* ================= VIEWS ================= */
 .view{
   display:none;
   padding:20px;
@@ -53,6 +84,7 @@ button:hover{
   display:block;
 }
 
+/* ================= GRIDS ================= */
 #home-grid,
 #movies-grid,
 #fav-grid{
@@ -62,12 +94,18 @@ button:hover{
   margin-top:20px;
 }
 
+/* ================= CARDS ================= */
 .card{
   background:#1a1a1a;
   padding:10px;
   border-radius:10px;
   text-align:center;
   cursor:pointer;
+  transition:0.2s;
+}
+
+.card:hover{
+  transform:scale(1.03);
 }
 
 .card img{
@@ -75,6 +113,7 @@ button:hover{
   border-radius:10px;
 }
 
+/* ================= DETAIL VIEW ================= */
 .detail-box{
   max-width:600px;
   margin:auto;
@@ -87,13 +126,15 @@ button:hover{
   margin-bottom:10px;
 }
 
+/* ================= SUGGESTIONS ================= */
 #suggestions{
   position:absolute;
-  top:40px;
+  top:42px;
   background:#222;
   width:200px;
   z-index:10;
-  border-radius:5px;
+  border-radius:6px;
+  overflow:hidden;
 }
 
 .suggestion-item{
@@ -105,21 +146,54 @@ button:hover{
   background:#333;
 }
 
+/* ================= PAGINATION ================= */
 #pagination{
   margin-top:20px;
   display:flex;
-  gap:10px;
   justify-content:center;
+  gap:10px;
 }
 
-/* ⭐ NEW FAVORITE BUTTONS */
+/* ================= FAVORITE BUTTON ================= */
 .fav-toggle{
   margin-top:8px;
   width:100%;
   background:#333;
   color:white;
+  padding:6px;
+  border:none;
+  border-radius:6px;
 }
 
 .fav-toggle:hover{
   background:#555;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px){
+  nav{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  nav div{
+    flex-direction:column;
+    width:100%;
+  }
+
+  nav input{
+    width:100%;
+  }
+
+  nav select{
+    width:100%;
+  }
+
+  nav button{
+    width:100%;
+  }
+
+  #suggestions{
+    width:100%;
+  }
 }
