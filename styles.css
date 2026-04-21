@@ -5,88 +5,77 @@ body{
   color:white;
 }
 
-/* ================= NAVBAR ================= */
+/* ================= NAV ================= */
 nav{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:15px 20px;
+  gap:15px;
+  padding:15px;
   background:#111;
   flex-wrap:wrap;
-  gap:10px;
 }
 
-/* BIG LOGO */
+/* LOGO */
 .logo{
   font-family:"Bebas Neue";
-  font-size:56px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  letter-spacing:1px;
-}
-
-.holo{
-  color:orange;
-}
-
-.flix{
-  color:purple;
-}
-
-/* SEARCH AREA */
-.controls{
-  position:relative;
+  font-size:64px;
   display:flex;
   gap:6px;
-  align-items:center;
 }
 
-/* INPUTS */
-input, select, button{
+.holo{ color:orange; }
+.flix{ color:purple; }
+
+/* SEARCH AREA */
+.search-box{
+  position:relative;
+  display:flex;
+  gap:5px;
+  flex:1;
+  max-width:400px;
+}
+
+#search{
+  width:100%;
   padding:8px;
-  border-radius:6px;
-  border:none;
-  background:#1f1f1f;
-  color:white;
-  outline:none;
 }
 
-button{
-  cursor:pointer;
-  transition:0.2s;
-}
-
-button:hover{
-  background:#333;
-}
-
-/* ================= SUGGESTIONS FIXED (VERTICAL DROPDOWN) ================= */
+/* ================= SUGGESTIONS (FIXED) ================= */
 #suggestions{
   position:absolute;
   top:42px;
   left:0;
   width:100%;
-  background:#222;
+  background:#1c1c1c;
+  border:1px solid #333;
   border-radius:6px;
-  overflow:hidden;
-  z-index:999;
   display:flex;
-  flex-direction:column;   /* 🔥 FIX: vertical stacking */
+  flex-direction:column;
+  z-index:999;
 }
 
-/* each item full width */
 .suggestion-item{
   padding:10px;
   cursor:pointer;
   border-bottom:1px solid #333;
-  text-align:left;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
 }
 
 .suggestion-item:hover{
+  background:#333;
+}
+
+/* ================= CONTROLS ================= */
+select, button{
+  padding:8px;
+  background:#1f1f1f;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button:hover{
   background:#333;
 }
 
@@ -109,7 +98,7 @@ button:hover{
   gap:15px;
 }
 
-/* ================= CARD ================= */
+/* ================= CARDS ================= */
 .card{
   background:#1a1a1a;
   border-radius:10px;
@@ -128,29 +117,31 @@ button:hover{
 }
 
 /* ================= DETAIL ================= */
-.detail-box{
+.detail{
   max-width:600px;
   margin:auto;
   text-align:center;
 }
 
-#detail-img{
+.detail img{
   width:100%;
   border-radius:10px;
 }
 
 /* ================= PAGINATION ================= */
-#pagination{
-  margin-top:20px;
+.pagination{
   display:flex;
   justify-content:center;
   gap:10px;
+  margin-top:15px;
 }
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 900px){
+@media(max-width:900px){
   .logo{
-    font-size:42px;
+    font-size:48px;
+    width:100%;
+    justify-content:center;
   }
 
   nav{
@@ -158,12 +149,7 @@ button:hover{
     align-items:stretch;
   }
 
-  .controls{
-    flex-direction:column;
-    width:100%;
-  }
-
-  #suggestions{
-    width:100%;
+  .search-box{
+    max-width:100%;
   }
 }
