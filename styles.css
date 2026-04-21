@@ -1,185 +1,125 @@
-body {
-  font-family: 'DM Sans', sans-serif;
-  margin: 0;
-  background: #0f0f0f;
-  color: white;
+body{
+  margin:0;
+  font-family:"DM Sans", sans-serif;
+  background:#0b0b12;
+  color:white;
 }
 
-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  padding: 12px;
-  background: #111;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:15px;
+  background:#111;
+  flex-wrap:wrap;
+  gap:10px;
 }
 
-.logo {
-  font-family: 'Bebas Neue';
-  font-size: 30px;
+.logo{
+  font-family:"Bebas Neue";
+  font-size:28px;
 }
 
-.holo {
-  color: orange;
+.holo{
+  color:orange;
 }
 
-.flix {
-  color: purple;
+.flix{
+  color:purple;
 }
 
-input, select {
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  background: #222;
-  color: white;
-  outline: none;
+input, select, button{
+  padding:8px;
+  border:none;
+  border-radius:5px;
 }
 
-button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  background: #333;
-  color: white;
-  cursor: pointer;
+button{
+  cursor:pointer;
+  background:#222;
+  color:white;
 }
 
-button:hover {
-  background: #555;
+button:hover{
+  background:#333;
 }
 
-.view {
-  display: none;
-  padding: 20px;
+.view{
+  display:none;
+  padding:20px;
 }
 
-.view.active {
-  display: block;
+.view.active{
+  display:block;
 }
 
 #home-grid,
 #movies-grid,
-#fav-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 15px;
+#fav-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:15px;
+  margin-top:20px;
 }
 
-.card {
-  background: #1c1c1c;
-  border-radius: 12px;
-  padding: 10px;
-  text-align: center;
-  cursor: pointer;
-  transition: 0.2s;
+.card{
+  background:#1a1a1a;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  cursor:pointer;
 }
 
-.card:hover {
-  transform: scale(1.05);
-  background: #2a2a2a;
+.card img{
+  width:100%;
+  border-radius:10px;
 }
 
-.card img {
-  width: 100%;
-  height: 240px;
-  object-fit: cover;
-  border-radius: 10px;
+.detail-box{
+  max-width:600px;
+  margin:auto;
+  text-align:center;
 }
 
-.detail-box {
-  max-width: 700px;
-  margin: auto;
-  text-align: center;
-  background: #1a1a1a;
-  padding: 20px;
-  border-radius: 12px;
+#detail-img{
+  width:100%;
+  border-radius:10px;
+  margin-bottom:10px;
 }
 
-.detail-img {
-  width: 100%;
-  max-width: 320px;
-  border-radius: 10px;
-  margin-bottom: 10px;
+#suggestions{
+  position:absolute;
+  top:40px;
+  background:#222;
+  width:200px;
+  z-index:10;
+  border-radius:5px;
 }
 
-#detail-actors {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #bbb;
+.suggestion-item{
+  padding:8px;
+  cursor:pointer;
 }
 
-#pagination {
-  margin-top: 20px;
-  text-align: center;
+.suggestion-item:hover{
+  background:#333;
 }
 
-#pagination button {
-  margin: 5px;
+#pagination{
+  margin-top:20px;
+  display:flex;
+  gap:10px;
+  justify-content:center;
 }
 
-/* ---------------- LIVE SEARCH ---------------- */
-
-#search {
-  position: relative;
+/* ⭐ NEW FAVORITE BUTTONS */
+.fav-toggle{
+  margin-top:8px;
+  width:100%;
+  background:#333;
+  color:white;
 }
 
-#suggestions {
-  position: absolute;
-  top: 55px;
-  left: 10px;
-  width: 240px;
-  background: #1a1a1a;
-  border-radius: 8px;
-  overflow: hidden;
-  z-index: 999;
-  max-height: 300px;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-}
-
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  cursor: pointer;
-  border-bottom: 1px solid #333;
-  font-size: 14px;
-}
-
-.suggestion-item:hover {
-  background: #333;
-}
-
-.suggestion-item img {
-  width: 30px;
-  height: 45px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-/* ---------------- RESPONSIVE ---------------- */
-
-@media (max-width: 600px) {
-  nav {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  #suggestions {
-    width: 90%;
-    left: 5%;
-  }
-
-  .card img {
-    height: 200px;
-  }
-
-  .detail-box {
-    width: 90%;
-  }
+.fav-toggle:hover{
+  background:#555;
 }
