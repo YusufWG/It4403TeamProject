@@ -10,20 +10,20 @@ nav{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:12px 20px;
+  padding:15px 20px;
   background:#111;
-  gap:15px;
   flex-wrap:wrap;
+  gap:10px;
 }
 
-/* LOGO */
+/* BIG LOGO */
 .logo{
   font-family:"Bebas Neue";
-  font-size:30px;
+  font-size:56px;
   display:flex;
   align-items:center;
-  gap:6px;
-  min-width:140px;
+  gap:8px;
+  letter-spacing:1px;
 }
 
 .holo{
@@ -34,43 +34,59 @@ nav{
   color:purple;
 }
 
-/* SEARCH + FILTER GROUP */
-nav div{
-  display:flex;
-  align-items:center;
-  gap:8px;
+/* SEARCH AREA */
+.controls{
   position:relative;
-  flex:1;
-  justify-content:center;
+  display:flex;
+  gap:6px;
+  align-items:center;
 }
 
-/* INPUT + SELECT */
-nav input,
-nav select{
-  padding:8px 10px;
+/* INPUTS */
+input, select, button{
+  padding:8px;
   border-radius:6px;
   border:none;
-  outline:none;
   background:#1f1f1f;
   color:white;
+  outline:none;
 }
 
-nav input{
-  width:180px;
-}
-
-/* BUTTONS */
-nav button{
-  padding:8px 12px;
-  border-radius:6px;
-  border:none;
-  background:#222;
-  color:white;
+button{
   cursor:pointer;
   transition:0.2s;
 }
 
-nav button:hover{
+button:hover{
+  background:#333;
+}
+
+/* ================= SUGGESTIONS FIXED (VERTICAL DROPDOWN) ================= */
+#suggestions{
+  position:absolute;
+  top:42px;
+  left:0;
+  width:100%;
+  background:#222;
+  border-radius:6px;
+  overflow:hidden;
+  z-index:999;
+  display:flex;
+  flex-direction:column;   /* 🔥 FIX: vertical stacking */
+}
+
+/* each item full width */
+.suggestion-item{
+  padding:10px;
+  cursor:pointer;
+  border-bottom:1px solid #333;
+  text-align:left;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.suggestion-item:hover{
   background:#333;
 }
 
@@ -84,22 +100,20 @@ nav button:hover{
   display:block;
 }
 
-/* ================= GRIDS ================= */
+/* ================= GRID ================= */
 #home-grid,
 #movies-grid,
 #fav-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:15px;
-  margin-top:20px;
 }
 
-/* ================= CARDS ================= */
+/* ================= CARD ================= */
 .card{
   background:#1a1a1a;
-  padding:10px;
   border-radius:10px;
-  text-align:center;
+  padding:10px;
   cursor:pointer;
   transition:0.2s;
 }
@@ -113,7 +127,7 @@ nav button:hover{
   border-radius:10px;
 }
 
-/* ================= DETAIL VIEW ================= */
+/* ================= DETAIL ================= */
 .detail-box{
   max-width:600px;
   margin:auto;
@@ -123,27 +137,6 @@ nav button:hover{
 #detail-img{
   width:100%;
   border-radius:10px;
-  margin-bottom:10px;
-}
-
-/* ================= SUGGESTIONS ================= */
-#suggestions{
-  position:absolute;
-  top:42px;
-  background:#222;
-  width:200px;
-  z-index:10;
-  border-radius:6px;
-  overflow:hidden;
-}
-
-.suggestion-item{
-  padding:8px;
-  cursor:pointer;
-}
-
-.suggestion-item:hover{
-  background:#333;
 }
 
 /* ================= PAGINATION ================= */
@@ -154,42 +147,19 @@ nav button:hover{
   gap:10px;
 }
 
-/* ================= FAVORITE BUTTON ================= */
-.fav-toggle{
-  margin-top:8px;
-  width:100%;
-  background:#333;
-  color:white;
-  padding:6px;
-  border:none;
-  border-radius:6px;
-}
-
-.fav-toggle:hover{
-  background:#555;
-}
-
 /* ================= RESPONSIVE ================= */
 @media (max-width: 900px){
+  .logo{
+    font-size:42px;
+  }
+
   nav{
     flex-direction:column;
     align-items:stretch;
   }
 
-  nav div{
+  .controls{
     flex-direction:column;
-    width:100%;
-  }
-
-  nav input{
-    width:100%;
-  }
-
-  nav select{
-    width:100%;
-  }
-
-  nav button{
     width:100%;
   }
 
