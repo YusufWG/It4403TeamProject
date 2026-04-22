@@ -1,3 +1,6 @@
+# index.html (UPDATED)
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,11 +16,11 @@
 <body>
 
 <nav>
-  <div class="logo">
+  <div class="logo" id="logoBtn">
     <span class="holo">HOLO</span><span class="flix">FLIX</span>
   </div>
 
-  <div style="position:relative; display:flex; gap:5px;">
+  <div class="controls">
     <input id="search" placeholder="Search movies..." />
     <button id="searchBtn">Search</button>
     <div id="suggestions"></div>
@@ -87,8 +90,8 @@ let page = 1;
 let currentGenre = "";
 let currentSort = "popular";
 let searchQuery = "";
+let lastView = "home";
 
-// ---------------- API ----------------
 function api(url){
   return $.ajax({
     url: BASE + url,
@@ -96,13 +99,15 @@ function api(url){
   });
 }
 
-// ---------------- VIEW ----------------
 function show(view){
+  if(view !== "detail"){
+    lastView = view;
+  }
+
   $(".view").removeClass("active");
   $(`#${view}-view`).addClass("active");
 }
 
-// ---------------- FAVORITES ----------------
 function getFavs(){
   return JSON.parse(localStorage.getItem("favs") || "[]");
 }
@@ -115,7 +120,6 @@ function isFavorite(id){
   return getFavs().some(f => f.id === id);
 }
 
-// ---------------- GENRES ----------------
 function loadGenres(){
   api("/genre/movie/list").then(d=>{
     let html = `<option value="">Genres</option>`;
@@ -126,7 +130,6 @@ function loadGenres(){
   });
 }
 
-// ---------------- FILTER ENGINE (GLOBAL FIX) ----------------
 function applyFilters(list){
   if(!list) return [];
 
@@ -139,7 +142,6 @@ function applyFilters(list){
   return list;
 }
 
-// ---------------- RENDER ----------------
 function render(list){
   return (list || []).map(m=>{
     let img = m.poster_path
@@ -155,14 +157,12 @@ function render(list){
   }).join("");
 }
 
-// ---------------- HOME ----------------
 function loadHome(){
   api(`/movie/${currentSort}`).then(d=>{
     $("#home-grid").html(render(applyFilters(d.results)));
   });
 }
 
-// ---------------- MOVIES ----------------
 function loadMovies(){
   let url = searchQuery
     ? `/search/movie?query=${searchQuery}&page=${page}`
@@ -174,13 +174,11 @@ function loadMovies(){
   });
 }
 
-// ---------------- FAVORITES ----------------
 function loadFavs(){
   let favs = getFavs();
   $("#fav-grid").html(render(applyFilters(favs)));
 }
 
-// ---------------- DETAIL ----------------
 function loadDetail(m){
   currentMovie = m;
 
@@ -200,7 +198,6 @@ function loadDetail(m){
   updateFavBtn();
 }
 
-// ---------------- FAVORITES BUTTON ----------------
 function updateFavBtn(){
   if(isFavorite(currentMovie.id)){
     $("#favBtn").text("Remove Favorite");
@@ -223,7 +220,6 @@ $("#favBtn").on("click",function(){
   loadFavs();
 });
 
-// ---------------- CLICK MOVIE ----------------
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
 
@@ -232,7 +228,6 @@ $(document).on("click",".card",function(){
   });
 });
 
-// ---------------- NAV ----------------
 $(document).on("click","button[data-view]",function(){
   let v = $(this).data("view");
   show(v);
@@ -242,7 +237,19 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-// ---------------- SEARCH ----------------
+$("#logoBtn").on("click", function(){
+  show("home");
+  loadHome();
+});
+
+$("#back").on("click", function(){
+  show(lastView);
+
+  if(lastView === "home") loadHome();
+  if(lastView === "movies") loadMovies();
+  if(lastView === "favorites") loadFavs();
+});
+
 $("#searchBtn").on("click",function(){
   searchQuery = $("#search").val().trim();
   page = 1;
@@ -250,7 +257,6 @@ $("#searchBtn").on("click",function(){
   loadMovies();
 });
 
-// ---------------- LIVE SEARCH ----------------
 $("#search").on("input",function(){
   let q = $(this).val().trim();
 
@@ -270,7 +276,6 @@ $("#search").on("input",function(){
   });
 });
 
-// suggestion click
 $(document).on("click",".suggestion-item",function(){
   let id = $(this).data("id");
 
@@ -282,14 +287,12 @@ $(document).on("click",".suggestion-item",function(){
   });
 });
 
-// close suggestions
 $(document).on("click",function(e){
   if(!$(e.target).closest("#search,#suggestions").length){
     $("#suggestions").empty();
   }
 });
 
-// ---------------- FILTERS (GLOBAL FIX) ----------------
 $("#genreFilter").on("change",function(){
   currentGenre = $(this).val();
   loadHome();
@@ -303,7 +306,6 @@ $("#sortFilter").on("change",function(){
   loadMovies();
 });
 
-// ---------------- PAGINATION ----------------
 $("#next").on("click",function(){
   page++;
   loadMovies();
@@ -316,7 +318,6 @@ $("#prev").on("click",function(){
   }
 });
 
-// ---------------- INIT ----------------
 $(function(){
   loadGenres();
   show("home");
@@ -327,4 +328,144 @@ $(function(){
 
 </body>
 </html>
+```
 
+---
+
+# styles.css (UPDATED)
+
+```css
+body{
+  margin:0;
+  font-family:"DM Sans", sans-serif;
+  background:#0b0b12;
+  color:white;
+}
+
+nav{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding:15px 20px;
+  background:#111;
+  flex-wrap:wrap;
+  gap:15px;
+}
+
+.logo{
+  font-family:"Bebas Neue";
+  font-size:56px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  letter-spacing:1px;
+  cursor:pointer;
+}
+
+.holo{ color:orange; }
+.flix{ color:purple; }
+
+.controls{
+  position:relative;
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+input, select, button{
+  padding:8px;
+  border-radius:6px;
+  border:none;
+  background:#1f1f1f;
+  color:white;
+  outline:none;
+}
+
+button{ cursor:pointer; transition:0.2s; }
+button:hover{ background:#333; }
+
+#suggestions{
+  position:absolute;
+  top:42px;
+  left:0;
+  width:100%;
+  background:#222;
+  border-radius:6px;
+  overflow:hidden;
+  z-index:999;
+  display:flex;
+  flex-direction:column;
+}
+
+.suggestion-item{
+  padding:10px;
+  cursor:pointer;
+  border-bottom:1px solid #333;
+  text-align:left;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.suggestion-item:hover{ background:#333; }
+
+.view{ display:none; padding:20px; }
+.view.active{ display:block; }
+
+#home-grid,
+#movies-grid,
+#fav-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:15px;
+}
+
+.card{
+  background:#1a1a1a;
+  border-radius:10px;
+  padding:10px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.card:hover{ transform:scale(1.03); }
+
+.card img{
+  width:100%;
+  border-radius:10px;
+}
+
+.detail-box{
+  max-width:600px;
+  margin:auto;
+  text-align:center;
+}
+
+#detail-img{
+  width:100%;
+  border-radius:10px;
+}
+
+#pagination{
+  margin-top:20px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
+
+@media (max-width: 900px){
+  .logo{ font-size:42px; }
+
+  nav{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .controls{
+    flex-direction:column;
+    width:100%;
+  }
+
+  #suggestions{ width:100%; }
+}
+```
