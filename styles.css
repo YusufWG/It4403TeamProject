@@ -5,23 +5,22 @@ body{
   color:white;
 }
 
+/* NAVBAR FIXED */
 nav{
   display:flex;
   align-items:center;
   justify-content:flex-start;
-  padding:15px 20px;
+  padding:10px 15px;
   background:#111;
-  flex-wrap:wrap;
-  gap:15px;
+  gap:10px;
 }
 
 .logo{
   font-family:"Bebas Neue";
-  font-size:56px;
+  font-size:48px;
   display:flex;
   align-items:center;
-  gap:8px;
-  letter-spacing:1px;
+  gap:6px;
   cursor:pointer;
 }
 
@@ -31,49 +30,47 @@ nav{
 .controls{
   position:relative;
   display:flex;
-  gap:6px;
+  gap:5px;
   align-items:center;
 }
 
 input, select, button{
-  padding:8px;
+  padding:6px 8px;
   border-radius:6px;
   border:none;
   background:#1f1f1f;
   color:white;
-  outline:none;
 }
 
-button{ cursor:pointer; transition:0.2s; }
-button:hover{ background:#333; }
+button:hover{
+  background:#333;
+}
 
 #suggestions{
   position:absolute;
-  top:42px;
+  top:38px;
   left:0;
   width:100%;
   background:#222;
   border-radius:6px;
-  overflow:hidden;
-  z-index:999;
   display:flex;
   flex-direction:column;
 }
 
 .suggestion-item{
-  padding:10px;
-  cursor:pointer;
+  padding:8px;
   border-bottom:1px solid #333;
-  text-align:left;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  cursor:pointer;
 }
 
-.suggestion-item:hover{ background:#333; }
+.view{
+  display:none;
+  padding:20px;
+}
 
-.view{ display:none; padding:20px; }
-.view.active{ display:block; }
+.view.active{
+  display:block;
+}
 
 #home-grid,
 #movies-grid,
@@ -88,10 +85,7 @@ button:hover{ background:#333; }
   border-radius:10px;
   padding:10px;
   cursor:pointer;
-  transition:0.2s;
 }
-
-.card:hover{ transform:scale(1.03); }
 
 .card img{
   width:100%;
@@ -99,4 +93,14 @@ button:hover{ background:#333; }
 }
 
 .detail-box{
+  max-width:600px;
+  margin:auto;
+  text-align:center;
+}
+
+#pagination{
+  margin-top:20px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
 }
