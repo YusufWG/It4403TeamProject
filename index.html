@@ -1,220 +1,3 @@
-# index.html (UPDATED — CLEAN)
-
-````html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>HoloFlix</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="styles.css"> <!-- IMPORTANT: CSS stays separate -->
-</head>
-
-<body>
-
-<nav>
-  <div class="logo" id="logoBtn">
-    <span class="holo">HOLO</span><span class="flix">FLIX</span>
-  </div>
-
-  <div class="controls">
-    <input id="search" placeholder="Search movies..." />
-    <button id="searchBtn">Search</button>
-    <div id="suggestions"></div>
-  </div>
-
-  <select id="genreFilter"></select>
-  <select id="sortFilter">
-    <option value="popular">Popular</option>
-    <option value="top_rated">Top Rated</option>
-    <option value="now_playing">Now Playing</option>
-  </select>
-
-  <button data-view="home">Home</button>
-  <button data-view="movies">Movies</button>
-  <button data-view="favorites">Favorites</button>
-</nav>
-
-<div id="app">
-
-  <div id="home-view" class="view active">
-    <h1>Suggested Movies</h1>
-    <div id="home-grid"></div>
-  </div>
-
-  <div id="movies-view" class="view">
-    <h1>Movies</h1>
-    <div id="movies-grid"></div>
-
-    <div id="pagination">
-      <button id="prev">Prev</button>
-      <span id="page">1</span>
-      <button id="next">Next</button>
-    </div>
-  </div>
-
-  <div id="detail-view" class="view">
-    <button id="back">← Back</button>
-
-    <div class="detail-box">
-      <img id="detail-img"/>
-      <h1 id="detail-title"></h1>
-      <p id="detail-overview"></p>
-      <p id="detail-actors"></p>
-
-      <button id="favBtn">Favorite</button>
-    </div>
-  </div>
-
-  <div id="favorites-view" class="view">
-    <h1>Favorites</h1>
-    <div id="fav-grid"></div>
-  </div>
-
-</div>
-
-<script>
-
-const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
-const BASE = "https://api.themoviedb.org/3";
-const IMG = "https://image.tmdb.org/t/p/w500";
-
-let currentMovie = null;
-let page = 1;
-let currentGenre = "";
-let currentSort = "popular";
-let searchQuery = "";
-let lastView = "home";
-
-function api(url){
-  return $.ajax({ url: BASE + url, data: { api_key: API_KEY } });
-}
-
-function show(view){
-  if(view !== "detail") lastView = view;
-  $(".view").removeClass("active");
-  $(`#${view}-view`).addClass("active");
-}
-
-// LOGO FIX (guaranteed to work after DOM ready)
-$(document).on("click", "#logoBtn", function(){
-  show("home");
-  loadHome();
-});
-
-$("#back").on("click", function(){
-  show(lastView);
-  if(lastView === "home") loadHome();
-  if(lastView === "movies") loadMovies();
-  if(lastView === "favorites") loadFavs();
-});
-
-function getFavs(){ return JSON.parse(localStorage.getItem("favs") || "[]"); }
-function saveFavs(f){ localStorage.setItem("favs", JSON.stringify(f)); }
-function isFavorite(id){ return getFavs().some(f => f.id === id); }
-
-function loadGenres(){
-  api("/genre/movie/list").then(d=>{
-    let html = `<option value="">Genres</option>`;
-    d.genres.forEach(g=> html += `<option value="${g.id}">${g.name}</option>`);
-    $("#genreFilter").html(html);
-  });
-}
-
-function applyFilters(list){
-  if(currentGenre){
-    list = list.filter(m => (m.genre_ids || []).includes(Number(currentGenre)));
-  }
-  return list || [];
-}
-
-function render(list){
-  return (list || []).map(m=>{
-    let img = m.poster_path ? IMG + m.poster_path : "https://via.placeholder.com/300x450";
-    return `<div class="card" data-id="${m.id}"><img src="${img}"><p>${m.title}</p></div>`;
-  }).join("");
-}
-
-function loadHome(){
-  api(`/movie/${currentSort}`).then(d=>{
-    $("#home-grid").html(render(applyFilters(d.results)));
-  });
-}
-
-function loadMovies(){
-  let url = searchQuery ? `/search/movie?query=${searchQuery}&page=${page}` : `/movie/${currentSort}?page=${page}`;
-  api(url).then(d=>{
-    $("#movies-grid").html(render(applyFilters(d.results)));
-    $("#page").text(page);
-  });
-}
-
-function loadFavs(){
-  $("#fav-grid").html(render(applyFilters(getFavs())));
-}
-
-function loadDetail(m){
-  currentMovie = m;
-  show("detail");
-
-  $("#detail-img").attr("src", IMG + m.poster_path);
-  $("#detail-title").text(m.title);
-  $("#detail-overview").text(m.overview);
-
-  api(`/movie/${m.id}/credits`).then(d=>{
-    $("#detail-actors").text("Actors: " + (d.cast || []).slice(0,5).map(a=>a.name).join(", "));
-  });
-
-  updateFavBtn();
-}
-
-function updateFavBtn(){
-  $("#favBtn").text(isFavorite(currentMovie.id) ? "Remove Favorite" : "Add Favorite");
-}
-
-$("#favBtn").on("click",function(){
-  let favs = getFavs();
-  if(isFavorite(currentMovie.id)) favs = favs.filter(f => f.id !== currentMovie.id);
-  else favs.push(currentMovie);
-  saveFavs(favs);
-  updateFavBtn();
-  loadFavs();
-});
-
-$(document).on("click",".card",function(){
-  api(`/movie/${$(this).data("id")}`).then(loadDetail);
-});
-
-$(document).on("click","button[data-view]",function(){
-  let v = $(this).data("view");
-  show(v);
-  if(v==="home") loadHome();
-  if(v==="movies") loadMovies();
-  if(v==="favorites") loadFavs();
-});
-
-$("#searchBtn").on("click",function(){
-  searchQuery = $("#search").val().trim();
-  page = 1;
-  show("movies");
-  loadMovies();
-});
-
-$("#genreFilter").on("change",function(){ currentGenre = $(this).val(); loadHome(); loadMovies(); loadFavs(); });
-$("#sortFilter").on("change",function(){ currentSort = $(this).val(); loadHome(); loadMovies(); });
-$("#next").on("click",function(){ page++; loadMovies(); });
-$("#prev").on("click",function(){ if(page>1){ page--; loadMovies(); } });
-
-$(function(){ loadGenres(); loadHome(); });
-
-</script>
-
-</body>
-</html>
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -240,9 +23,7 @@ $(function(){ loadGenres(); loadHome(); });
     <div id="suggestions"></div>
   </div>
 
-  <select id="genreFilter">
-    <option value="">Genres</option>
-  </select>
+  <select id="genreFilter"></select>
 
   <select id="sortFilter">
     <option value="popular">Popular</option>
@@ -314,13 +95,25 @@ function api(url){
 }
 
 function show(view){
-  if(view !== "detail"){
-    lastView = view;
-  }
-
+  if(view !== "detail") lastView = view;
   $(".view").removeClass("active");
   $(`#${view}-view`).addClass("active");
 }
+
+// ✅ LOGO FIX (guaranteed working)
+$(document).on("click", "#logoBtn", function(){
+  show("home");
+  loadHome();
+});
+
+// ✅ BACK BUTTON FIX
+$("#back").on("click", function(){
+  show(lastView);
+
+  if(lastView === "home") loadHome();
+  if(lastView === "movies") loadMovies();
+  if(lastView === "favorites") loadFavs();
+});
 
 function getFavs(){
   return JSON.parse(localStorage.getItem("favs") || "[]");
@@ -345,15 +138,12 @@ function loadGenres(){
 }
 
 function applyFilters(list){
-  if(!list) return [];
-
   if(currentGenre){
     list = list.filter(m =>
       (m.genre_ids || []).includes(Number(currentGenre))
     );
   }
-
-  return list;
+  return list || [];
 }
 
 function render(list){
@@ -389,13 +179,11 @@ function loadMovies(){
 }
 
 function loadFavs(){
-  let favs = getFavs();
-  $("#fav-grid").html(render(applyFilters(favs)));
+  $("#fav-grid").html(render(applyFilters(getFavs())));
 }
 
 function loadDetail(m){
   currentMovie = m;
-
   show("detail");
 
   $("#detail-img").attr("src", IMG + m.poster_path);
@@ -413,11 +201,9 @@ function loadDetail(m){
 }
 
 function updateFavBtn(){
-  if(isFavorite(currentMovie.id)){
-    $("#favBtn").text("Remove Favorite");
-  } else {
-    $("#favBtn").text("Add Favorite");
-  }
+  $("#favBtn").text(
+    isFavorite(currentMovie.id) ? "Remove Favorite" : "Add Favorite"
+  );
 }
 
 $("#favBtn").on("click",function(){
@@ -436,10 +222,7 @@ $("#favBtn").on("click",function(){
 
 $(document).on("click",".card",function(){
   let id = $(this).data("id");
-
-  api(`/movie/${id}`).then(m=>{
-    loadDetail(m);
-  });
+  api(`/movie/${id}`).then(loadDetail);
 });
 
 $(document).on("click","button[data-view]",function(){
@@ -451,60 +234,11 @@ $(document).on("click","button[data-view]",function(){
   if(v==="favorites") loadFavs();
 });
 
-$("#logoBtn").on("click", function(){
-  show("home");
-  loadHome();
-});
-
-$("#back").on("click", function(){
-  show(lastView);
-
-  if(lastView === "home") loadHome();
-  if(lastView === "movies") loadMovies();
-  if(lastView === "favorites") loadFavs();
-});
-
 $("#searchBtn").on("click",function(){
   searchQuery = $("#search").val().trim();
   page = 1;
   show("movies");
   loadMovies();
-});
-
-$("#search").on("input",function(){
-  let q = $(this).val().trim();
-
-  if(q.length < 2){
-    $("#suggestions").empty();
-    return;
-  }
-
-  api(`/search/movie?query=${q}`).then(d=>{
-    $("#suggestions").html(
-      (d.results || []).slice(0,5).map(m=>`
-        <div class="suggestion-item" data-id="${m.id}">
-          ${m.title}
-        </div>
-      `).join("")
-    );
-  });
-});
-
-$(document).on("click",".suggestion-item",function(){
-  let id = $(this).data("id");
-
-  $("#suggestions").empty();
-  $("#search").val("");
-
-  api(`/movie/${id}`).then(m=>{
-    loadDetail(m);
-  });
-});
-
-$(document).on("click",function(e){
-  if(!$(e.target).closest("#search,#suggestions").length){
-    $("#suggestions").empty();
-  }
 });
 
 $("#genreFilter").on("change",function(){
@@ -534,7 +268,6 @@ $("#prev").on("click",function(){
 
 $(function(){
   loadGenres();
-  show("home");
   loadHome();
 });
 
@@ -542,143 +275,3 @@ $(function(){
 
 </body>
 </html>
-````
-
----
-
-# styles.css (UPDATED)
-
-```css
-body{
-  margin:0;
-  font-family:"DM Sans", sans-serif;
-  background:#0b0b12;
-  color:white;
-}
-
-nav{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  padding:10px 15px;
-  background:#111;
-  gap:10px; /* tighter spacing */
-}
-
-.logo{
-  font-family:"Bebas Neue";
-  font-size:56px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  letter-spacing:1px;
-  cursor:pointer;
-}
-
-.holo{ color:orange; }
-.flix{ color:purple; }
-
-.controls{
-  position:relative;
-  display:flex;
-  gap:6px;
-  align-items:center;
-}
-
-input, select, button{
-  padding:8px;
-  border-radius:6px;
-  border:none;
-  background:#1f1f1f;
-  color:white;
-  outline:none;
-}
-
-button{ cursor:pointer; transition:0.2s; }
-button:hover{ background:#333; }
-
-#suggestions{
-  position:absolute;
-  top:42px;
-  left:0;
-  width:100%;
-  background:#222;
-  border-radius:6px;
-  overflow:hidden;
-  z-index:999;
-  display:flex;
-  flex-direction:column;
-}
-
-.suggestion-item{
-  padding:10px;
-  cursor:pointer;
-  border-bottom:1px solid #333;
-  text-align:left;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.suggestion-item:hover{ background:#333; }
-
-.view{ display:none; padding:20px; }
-.view.active{ display:block; }
-
-#home-grid,
-#movies-grid,
-#fav-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-  gap:15px;
-}
-
-.card{
-  background:#1a1a1a;
-  border-radius:10px;
-  padding:10px;
-  cursor:pointer;
-  transition:0.2s;
-}
-
-.card:hover{ transform:scale(1.03); }
-
-.card img{
-  width:100%;
-  border-radius:10px;
-}
-
-.detail-box{
-  max-width:600px;
-  margin:auto;
-  text-align:center;
-}
-
-#detail-img{
-  width:100%;
-  border-radius:10px;
-}
-
-#pagination{
-  margin-top:20px;
-  display:flex;
-  justify-content:center;
-  gap:10px;
-}
-
-@media (max-width: 900px){
-  .logo{ font-size:42px; }
-
-  nav{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .controls{
-    flex-direction:column;
-    width:100%;
-  }
-
-  #suggestions{ width:100%; }
-}
-```
