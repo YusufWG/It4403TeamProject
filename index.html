@@ -1,5 +1,219 @@
-# index.html (UPDATED)
+# index.html (UPDATED — CLEAN)
 
+````html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HoloFlix</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"> <!-- IMPORTANT: CSS stays separate -->
+</head>
+
+<body>
+
+<nav>
+  <div class="logo" id="logoBtn">
+    <span class="holo">HOLO</span><span class="flix">FLIX</span>
+  </div>
+
+  <div class="controls">
+    <input id="search" placeholder="Search movies..." />
+    <button id="searchBtn">Search</button>
+    <div id="suggestions"></div>
+  </div>
+
+  <select id="genreFilter"></select>
+  <select id="sortFilter">
+    <option value="popular">Popular</option>
+    <option value="top_rated">Top Rated</option>
+    <option value="now_playing">Now Playing</option>
+  </select>
+
+  <button data-view="home">Home</button>
+  <button data-view="movies">Movies</button>
+  <button data-view="favorites">Favorites</button>
+</nav>
+
+<div id="app">
+
+  <div id="home-view" class="view active">
+    <h1>Suggested Movies</h1>
+    <div id="home-grid"></div>
+  </div>
+
+  <div id="movies-view" class="view">
+    <h1>Movies</h1>
+    <div id="movies-grid"></div>
+
+    <div id="pagination">
+      <button id="prev">Prev</button>
+      <span id="page">1</span>
+      <button id="next">Next</button>
+    </div>
+  </div>
+
+  <div id="detail-view" class="view">
+    <button id="back">← Back</button>
+
+    <div class="detail-box">
+      <img id="detail-img"/>
+      <h1 id="detail-title"></h1>
+      <p id="detail-overview"></p>
+      <p id="detail-actors"></p>
+
+      <button id="favBtn">Favorite</button>
+    </div>
+  </div>
+
+  <div id="favorites-view" class="view">
+    <h1>Favorites</h1>
+    <div id="fav-grid"></div>
+  </div>
+
+</div>
+
+<script>
+
+const API_KEY = "ec49f2d5bd16d2cf6f6a55185e08503c";
+const BASE = "https://api.themoviedb.org/3";
+const IMG = "https://image.tmdb.org/t/p/w500";
+
+let currentMovie = null;
+let page = 1;
+let currentGenre = "";
+let currentSort = "popular";
+let searchQuery = "";
+let lastView = "home";
+
+function api(url){
+  return $.ajax({ url: BASE + url, data: { api_key: API_KEY } });
+}
+
+function show(view){
+  if(view !== "detail") lastView = view;
+  $(".view").removeClass("active");
+  $(`#${view}-view`).addClass("active");
+}
+
+// LOGO FIX (guaranteed to work after DOM ready)
+$(document).on("click", "#logoBtn", function(){
+  show("home");
+  loadHome();
+});
+
+$("#back").on("click", function(){
+  show(lastView);
+  if(lastView === "home") loadHome();
+  if(lastView === "movies") loadMovies();
+  if(lastView === "favorites") loadFavs();
+});
+
+function getFavs(){ return JSON.parse(localStorage.getItem("favs") || "[]"); }
+function saveFavs(f){ localStorage.setItem("favs", JSON.stringify(f)); }
+function isFavorite(id){ return getFavs().some(f => f.id === id); }
+
+function loadGenres(){
+  api("/genre/movie/list").then(d=>{
+    let html = `<option value="">Genres</option>`;
+    d.genres.forEach(g=> html += `<option value="${g.id}">${g.name}</option>`);
+    $("#genreFilter").html(html);
+  });
+}
+
+function applyFilters(list){
+  if(currentGenre){
+    list = list.filter(m => (m.genre_ids || []).includes(Number(currentGenre)));
+  }
+  return list || [];
+}
+
+function render(list){
+  return (list || []).map(m=>{
+    let img = m.poster_path ? IMG + m.poster_path : "https://via.placeholder.com/300x450";
+    return `<div class="card" data-id="${m.id}"><img src="${img}"><p>${m.title}</p></div>`;
+  }).join("");
+}
+
+function loadHome(){
+  api(`/movie/${currentSort}`).then(d=>{
+    $("#home-grid").html(render(applyFilters(d.results)));
+  });
+}
+
+function loadMovies(){
+  let url = searchQuery ? `/search/movie?query=${searchQuery}&page=${page}` : `/movie/${currentSort}?page=${page}`;
+  api(url).then(d=>{
+    $("#movies-grid").html(render(applyFilters(d.results)));
+    $("#page").text(page);
+  });
+}
+
+function loadFavs(){
+  $("#fav-grid").html(render(applyFilters(getFavs())));
+}
+
+function loadDetail(m){
+  currentMovie = m;
+  show("detail");
+
+  $("#detail-img").attr("src", IMG + m.poster_path);
+  $("#detail-title").text(m.title);
+  $("#detail-overview").text(m.overview);
+
+  api(`/movie/${m.id}/credits`).then(d=>{
+    $("#detail-actors").text("Actors: " + (d.cast || []).slice(0,5).map(a=>a.name).join(", "));
+  });
+
+  updateFavBtn();
+}
+
+function updateFavBtn(){
+  $("#favBtn").text(isFavorite(currentMovie.id) ? "Remove Favorite" : "Add Favorite");
+}
+
+$("#favBtn").on("click",function(){
+  let favs = getFavs();
+  if(isFavorite(currentMovie.id)) favs = favs.filter(f => f.id !== currentMovie.id);
+  else favs.push(currentMovie);
+  saveFavs(favs);
+  updateFavBtn();
+  loadFavs();
+});
+
+$(document).on("click",".card",function(){
+  api(`/movie/${$(this).data("id")}`).then(loadDetail);
+});
+
+$(document).on("click","button[data-view]",function(){
+  let v = $(this).data("view");
+  show(v);
+  if(v==="home") loadHome();
+  if(v==="movies") loadMovies();
+  if(v==="favorites") loadFavs();
+});
+
+$("#searchBtn").on("click",function(){
+  searchQuery = $("#search").val().trim();
+  page = 1;
+  show("movies");
+  loadMovies();
+});
+
+$("#genreFilter").on("change",function(){ currentGenre = $(this).val(); loadHome(); loadMovies(); loadFavs(); });
+$("#sortFilter").on("change",function(){ currentSort = $(this).val(); loadHome(); loadMovies(); });
+$("#next").on("click",function(){ page++; loadMovies(); });
+$("#prev").on("click",function(){ if(page>1){ page--; loadMovies(); } });
+
+$(function(){ loadGenres(); loadHome(); });
+
+</script>
+
+</body>
+</html>
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -328,7 +542,7 @@ $(function(){
 
 </body>
 </html>
-```
+````
 
 ---
 
@@ -346,10 +560,9 @@ nav{
   display:flex;
   align-items:center;
   justify-content:flex-start;
-  padding:15px 20px;
+  padding:10px 15px;
   background:#111;
-  flex-wrap:wrap;
-  gap:15px;
+  gap:10px; /* tighter spacing */
 }
 
 .logo{
