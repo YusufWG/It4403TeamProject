@@ -100,13 +100,11 @@ function show(view){
   $(`#${view}-view`).addClass("active");
 }
 
-// ✅ LOGO FIX (guaranteed working)
 $(document).on("click", "#logoBtn", function(){
   show("home");
   loadHome();
 });
 
-// ✅ BACK BUTTON FIX
 $("#back").on("click", function(){
   show(lastView);
 
@@ -269,6 +267,51 @@ $("#prev").on("click",function(){
 $(function(){
   loadGenres();
   loadHome();
+});
+
+let suggestionTimeout;
+
+$("#search").on("input", function () {
+  let query = $(this).val().trim();
+
+  clearTimeout(suggestionTimeout);
+
+  if (!query) {
+    $("#suggestions").empty().hide();
+    return;
+  }
+
+  suggestionTimeout = setTimeout(() => {
+    api(`/search/movie?query=${query}`).then(d => {
+      let results = (d.results || []).slice(0, 5);
+
+      let html = results.map(m => `
+        <div class="suggestion-item" data-id="${m.id}">
+          ${m.title}
+        </div>
+      `).join("");
+
+      $("#suggestions").html(html).show();
+    });
+  }, 300);
+});
+
+$(document).on("click", ".suggestion-item", function () {
+  let title = $(this).text();
+
+  $("#search").val(title);
+  $("#suggestions").empty().hide();
+
+  searchQuery = title;
+  page = 1;
+  show("movies");
+  loadMovies();
+});
+
+$(document).on("click", function (e) {
+  if (!$(e.target).closest("#search, #suggestions").length) {
+    $("#suggestions").hide();
+  }
 });
 
 </script>
